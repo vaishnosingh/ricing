@@ -1,21 +1,25 @@
 import QtQuick
 import QtQuick.Shapes
 import qs
+import qs.services
 
 // Moon Phase Orb — Nothing OS dot-matrix edition
-// Three-layer luminance architecture:
-//   Layer 1 · Full sphere at ~35% brightness  → dim dots outline the entire globe
-//   Layer 2 · Lit phase at 100% brightness    → bright crescent/gibbous blazes
-//   Layer 3 · Wide outer halo at ~15%         → moonlight glow bleeds outward
-// This ensures a thin crescent is never just one dot: the full sphere is always visible
-// as a dim presence while the bright edge makes the phase readable and dramatic.
+// Combines physically accurate synodic moon phases with:
+//   1. Cosmic Gravitational Wave Ripples: concentric dot rings expanding and fading into deep space
+//   2. Audio-Reactive Bass Pulse: Cava visualizer modulation when music is playing
+//   3. Surface Glint & Nothing Red Accent Dot at lunar cusp
+//   4. Three-layer luminance architecture rendered through Dm { step: 8 }
 Item {
     id: root
 
-    // Breathing animation phase (driven by Back.qml timer at 100 ms intervals)
+    // Breathing & ripple wave phase (driven by Back.qml timer)
     property real phase: 0
     property real step: 8
     property bool breathe: true
+
+    // Audio responsiveness via Cava
+    readonly property bool hasAudio: Media.playing && Cava.active
+    readonly property real bass: hasAudio ? Math.min(1.0, ((Cava.bars[0] || 0) + (Cava.bars[1] || 0)) * 0.75) : 0.0
 
     // Astronomical reference · Jan 11 2024 11:57 UTC — confirmed new moon
     readonly property real refMs:     1704974220000
@@ -33,20 +37,24 @@ Item {
     }
     readonly property real moonAge: moonPhase * 29.53058867
 
-    // Breathing: subtle ±4% opacity pulse — calm, meditative
+    // Dynamic scale pulse on bass hit
+    scale: 1.0 + (root.bass * 0.04)
+    Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
+
+    // Breathing: subtle ±4% opacity pulse + bass surge
     width:   540
     height:  540
-    opacity: breathe ? (0.70 + 0.04 * Math.sin(phase * 2 * Math.PI / 8)) : 0.72
+    opacity: (breathe ? (0.70 + 0.04 * Math.sin(phase * 2 * Math.PI / 8)) : 0.72) + (root.bass * 0.15)
 
     layer.enabled: true
     layer.textureSize: Qt.size(540, 540)
     layer.effect: Dm { step: root.step }
 
-    // ── SVG moon with three luminance layers ─────────────────────────────────
-    function moonSvg(phi, s) {
+    // ── SVG moon with three luminance layers & gravitational ripples ─────────
+    function moonSvg(phi, s, ph, bAmp) {
         // s = size (square canvas), center at s/2
         const cx = s * 0.5, cy = s * 0.5
-        const R  = s * 0.36      // moon disk — 72% of canvas
+        const R  = s * 0.36      // moon disk — 72% of canvas (~194px)
         const rH = s * 0.46      // halo radius — bleeds 10% beyond disk edge
 
         // Phase geometry  ·  terminator x-radius
@@ -78,13 +86,46 @@ Item {
         const gx = 50 + litSide * 32          // 82% or 18%
         const gy = 42
 
+        // ── Gravitational Wave Ripples (3 concentric expanding rings) ────────
+        let rippleSvg = '';
+        const numRipples = 3;
+        for (let i = 0; i < numRipples; i++) {
+            // Normalized phase progression 0.0 -> 1.0
+            const prog = ((ph / (2.0 * Math.PI) + (i / numRipples)) % 1.0 + 1.0) % 1.0;
+            // Radius expands from R + 4px up to R + 64px + bass expansion
+            const rRip = (R + 4) + prog * (60 + bAmp * 26);
+            // Opacity fades smoothly to 0 as it expands outward
+            const opRip = Math.max(0, (1.0 - prog) * (0.28 + bAmp * 0.35));
+            rippleSvg += `<circle cx="${cx}" cy="${cy}" r="${rRip.toFixed(1)}" fill="none" stroke="#ffffff" stroke-width="2.2" opacity="${opRip.toFixed(3)}"/>`;
+        }
+
+        // ── Nothing Signature Red Accent Dot at lunar crescent cusp ──────────
+        let redAccentSvg = '';
+        if (phi > 0.02 && phi < 0.98) {
+            // Position dot right at the northern crescent horn tip
+            const tipX = cx + (phi <= 0.5 ? 1 : -1) * (R * 0.08);
+            const tipY = cy - R + 3;
+            const redOp = (0.75 + 0.25 * Math.sin(ph * 2.0) + bAmp * 0.25).toFixed(2);
+            redAccentSvg = `<circle cx="${tipX.toFixed(1)}" cy="${tipY.toFixed(1)}" r="4.2" fill="#ff2e2e" opacity="${redOp}"/>`;
+        }
+
+        // ── Lunar Highland Surface Glints ────────────────────────────────────
+        let glintSvg = '';
+        if (phi > 0.03 && phi < 0.97) {
+            const g1Op = Math.max(0, 0.45 * Math.sin(ph * 3.0)).toFixed(2);
+            const g2Op = Math.max(0, 0.40 * Math.cos(ph * 2.4 + 1.2)).toFixed(2);
+            const glintX = cx + litSide * (rx * 0.45);
+            glintSvg = `<circle cx="${(glintX).toFixed(1)}" cy="${(cy - R * 0.32).toFixed(1)}" r="2.8" fill="#ffffff" opacity="${g1Op}"/>` +
+                       `<circle cx="${(glintX - litSide * 8).toFixed(1)}" cy="${(cy + R * 0.28).toFixed(1)}" r="2.5" fill="#ffffff" opacity="${g2Op}"/>`;
+        }
+
         return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
 <defs>
   <!-- LAYER 3: soft outer halo — moonlight atmosphere -->
   <radialGradient id="halo" cx="50%" cy="50%" r="50%">
     <stop offset="68%"  stop-color="#fff" stop-opacity="0"/>
-    <stop offset="78%"  stop-color="#fff" stop-opacity="0.11"/>
-    <stop offset="88%"  stop-color="#fff" stop-opacity="0.07"/>
+    <stop offset="78%"  stop-color="#fff" stop-opacity="${(0.11 + bAmp * 0.12).toFixed(2)}"/>
+    <stop offset="88%"  stop-color="#fff" stop-opacity="${(0.07 + bAmp * 0.08).toFixed(2)}"/>
     <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
   </radialGradient>
 
@@ -108,6 +149,9 @@ Item {
   <clipPath id="disk"><circle cx="${cx}" cy="${cy}" r="${R}"/></clipPath>
 </defs>
 
+<!-- Gravitational Wave Ripples in deep space -->
+${rippleSvg}
+
 <!-- LAYER 3 · Halo (outside disk, bleeds into background dot grid) -->
 <circle cx="${cx}" cy="${cy}" r="${rH}" fill="url(#halo)"/>
 
@@ -126,11 +170,17 @@ Item {
 <!-- LAYER 2 · Bright lit zone — the sunlit phase burns bright -->
 ${litPath ? `<path d="${litPath}" fill="url(#lit)"/>` : ''}
 
+<!-- Surface highland micro-glints -->
+${glintSvg}
+
+<!-- Nothing Signature Red Accent Dot at lunar cusp -->
+${redAccentSvg}
+
 </svg>`
     }
 
     Image {
         anchors.fill: parent
-        source: "data:image/svg+xml," + encodeURIComponent(root.moonSvg(root.moonPhase, 540))
+        source: "data:image/svg+xml," + encodeURIComponent(root.moonSvg(root.moonPhase, 540, root.phase, root.bass))
     }
 }

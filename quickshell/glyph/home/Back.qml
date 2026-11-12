@@ -4,6 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import qs
 import qs.components
+import qs.services
 
 // home backdrop — dot grid, moon phase orb, solar arc, wallpaper
 PanelWindow {
@@ -17,7 +18,7 @@ PanelWindow {
 
     readonly property bool home: (Hyprland.focusedWorkspace?.toplevels.values.length ?? 0) === 0
     property real phase: 0
-    Timer { running: root.home && orb.visible; interval: 100; repeat: true; onTriggered: root.phase += 0.1 }
+    Timer { running: root.home && orb.visible; interval: Media.playing ? 60 : 100; repeat: true; onTriggered: root.phase += 0.1 }
 
     // Solar time — updates every 30 s for smooth sun movement
     property real nowMs: Date.now()
@@ -229,15 +230,21 @@ PanelWindow {
 
         Wall { id: wall; anchors.fill: parent; path: Theme.wallSrc(Theme.state.wall); animate: !Sys.wallOpen }
 
-        // Moon phase orb — centred (above Wall in z-order)
+        // Moon phase orb — centred with spring-damped cursor gravity
         Orb {
             id: orb
             visible: Theme.state.orb && !wall.opaque
             anchors.centerIn: parent
-            width: 460
-            height: 460
+            width: 520
+            height: 520
             step: 8
             phase: root.phase
+            transform: Translate {
+                x: Theme.orbTiltX
+                y: Theme.orbTiltY
+                Behavior on x { SpringAnimation { spring: 2.8; damping: 0.28 } }
+                Behavior on y { SpringAnimation { spring: 2.8; damping: 0.28 } }
+            }
         }
 
         // Ultra-smooth shooting stars and comets travelling across the sky

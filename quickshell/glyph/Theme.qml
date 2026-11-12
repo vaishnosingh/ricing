@@ -9,6 +9,11 @@ import qs.settings
 Singleton {
     id: root
 
+    // Center Moon Orb Interactive state
+    property real orbTiltX: 0
+    property real orbTiltY: 0
+    property bool orbHovered: false
+
     // state survives a restart, and the lock reads it too (separate process)
     readonly property alias state: st
     readonly property bool light: st.light

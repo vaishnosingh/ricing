@@ -26,10 +26,27 @@ PanelWindow {
     readonly property bool home: (Hyprland.focusedWorkspace?.toplevels.values.length ?? 0) === 0
     Binding { target: SysStats; property: "detailed"; value: root.home || Sys.deckOpen }
     // not in a delegate: a destroyed Binding does not return the value -- remove the widget and cava would run forever
-    Binding { target: Cava; property: "active"; value: root.home && bento.model.some(w => w.id === "cava") }
+    Binding { target: Cava; property: "active"; value: root.home && (Media.playing || bento.model.some(w => w.id === "cava")) }
 
     SystemClock { id: clock; precision: SystemClock.Seconds }
     readonly property var en: Qt.locale("en_US")
+
+    // ── Synodic Lunar Telemetry Calculation ────────────────────────────────
+    readonly property real moonPhaseFraction: {
+        const d = (clock.date.getTime() - 1704974220000) % 2551442861;
+        return (d < 0 ? d + 2551442861 : d) / 2551442861;
+    }
+    readonly property real moonIllumination: 0.5 * (1.0 - Math.cos(moonPhaseFraction * 2 * Math.PI))
+    function synodicPhaseName(phi) {
+        if (phi < 0.02 || phi >= 0.98) return "New Moon";
+        if (phi < 0.23) return "Waxing Crescent";
+        if (phi < 0.27) return "First Quarter";
+        if (phi < 0.48) return "Waxing Gibbous";
+        if (phi < 0.52) return "Full Moon";
+        if (phi < 0.73) return "Waning Gibbous";
+        if (phi < 0.77) return "Last Quarter";
+        return "Waning Crescent";
+    }
 
     // ── Nakshatra — Swiss Ephemeris data via FileView ──────────────────────
     // nakshatra-calc (pyswisseph) writes ~/.local/state/rice/nakshatra.json
@@ -688,6 +705,82 @@ PanelWindow {
             font.pixelSize: 13
             color: "#ffffff"
             opacity: 0.60
+        }
+
+        // ── Center Moon Orb Interaction & Gravity Well ──────────────────────
+        Item {
+            id: orbInteractionArea
+            x: 700
+            y: 280
+            width: 520
+            height: 520
+
+            readonly property real cx: width / 2
+            readonly property real cy: height / 2
+
+            HoverHandler {
+                id: orbHover
+                cursorShape: Qt.PointingHandCursor
+                onHoveredChanged: {
+                    Theme.orbHovered = hovered;
+                    if (!hovered) {
+                        Theme.orbTiltX = 0;
+                        Theme.orbTiltY = 0;
+                    }
+                }
+                onPointChanged: {
+                    if (hovered) {
+                        const dx = (point.position.x - orbInteractionArea.cx) / orbInteractionArea.cx;
+                        const dy = (point.position.y - orbInteractionArea.cy) / orbInteractionArea.cy;
+                        Theme.orbTiltX = Math.max(-14, Math.min(14, dx * 14));
+                        Theme.orbTiltY = Math.max(-14, Math.min(14, dy * 14));
+                    }
+                }
+            }
+        }
+
+        // ── Center Moon Orb Hover Telemetry Badge ───────────────────────────
+        Item {
+            x: 760
+            y: 806
+            width: 400
+            height: 32
+            opacity: Theme.orbHovered ? 1.0 : 0.0
+            visible: opacity > 0.01
+            Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutQuad } }
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: telemetryRow.width + 24
+                height: 28
+                radius: 14
+                color: Theme.s1
+                border { width: 1; color: Theme.s3 }
+
+                Row {
+                    id: telemetryRow
+                    anchors.centerIn: parent
+                    spacing: 8
+
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 6
+                        height: 6
+                        radius: 3
+                        color: Theme.red
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: `${root.synodicPhaseName(root.moonPhaseFraction).toUpperCase()} · ${(root.moonIllumination * 100).toFixed(1)}% ILLUMINATED · ${root.nakshatraEnStr.toUpperCase()}`
+                        font.family: Theme.ui
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        font.letterSpacing: 0.8
+                        color: Theme.fg
+                    }
+                }
+            }
         }
 
         // ── RIGHT BENTO — 2 columns × 3 rows ────────────────────────────────

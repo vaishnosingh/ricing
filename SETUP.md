@@ -570,3 +570,25 @@ console.log('Next nakshatra in:', ((1-posInNak/100)*(360/27)/13.176*24).toFixed(
     - Quickshell RSS memory: ~326 MB (~1.0% system RAM).
     - GPU VRAM consumption: ~125 MiB on NVIDIA GeForce RTX 5060 (total system VRAM ~450 MiB / 8151 MiB).
     - GPU utilization: ~1% with negligible ~17W idle power.
+
+---
+
+### 8.14 Interactive Gravitational Lunar Orb & Audio Pulse (`Orb.qml`, `Back.qml`, `Home.qml`)
+- **Cosmic Gravitational Wave Ripples:**
+  - Added 3 concentric expanding dot-matrix ripple rings around the central moon disc in `Orb.qml`.
+  - Ripples expand from $R = 195\text{px}$ up to $260\text{px}$, fading smoothly into deep space as they disperse.
+  - Generates natural circular LED dots directly through `Dm { step: 8 }` with zero extra FBO textures.
+- **Audio-Reactive Tide (Cava + MPRIS):**
+  - Connected `Cava.active` in `Home.qml` to `root.home && (Media.playing || bento.model.some(w => w.id === "cava"))`.
+  - When music plays, low bass frequencies dynamically swell the ripple expansion radius and corona brightness.
+  - When audio is silent, the system rests in a low-frequency meditative breathing cycle.
+- **Interactive Cursor Gravity Well (Spring Physics):**
+  - Placed an interactive hover zone across the central desktop area in `Home.qml`.
+  - Moving the cursor near the moon orb creates an organic gravitational attraction, shifting the orb ($\pm 14\text{px}$) with liquid spring damping physics (`Behavior on x/y { SpringAnimation { spring: 2.8; damping: 0.28 } }`).
+- **Nothing Red Accent Dot & Surface Glints:**
+  - Added a distinct Nothing OS red spark dot (`#ff2e2e`) at the northern lunar cusp.
+  - Added micro-glints along the illuminated lunar highland rim.
+- **Hover Telemetry Reveal:**
+  - Hovering over the central orb smoothly reveals a sleek Nothing OS pill badge displaying real-time astronomical telemetry:
+    `WAXING CRESCENT · 6.2% ILLUMINATED · MULA`
+  - Fades out cleanly when the cursor moves away.
