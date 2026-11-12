@@ -11,36 +11,28 @@ from pathlib import Path
 try:
     import swisseph as swe
 except ImportError:
-    # Dynamic virtualenv search across standard rice locations and user venvs
-    import glob
+    # If not found in current python environment, check for rice virtualenv or user venv and re-exec
     home = os.path.expanduser("~")
-    search_patterns = [
-        os.path.join(home, ".local/share/rice/venv/lib/python*/site-packages"),
-        os.path.join(home, "extras/local_venv/lib/python*/site-packages"),
-        os.path.join(home, ".venv/lib/python*/site-packages"),
-        os.path.join(home, "venv/lib/python*/site-packages"),
+    candidate_pythons = [
+        os.path.join(home, ".local/share/rice/venv/bin/python3"),
+        os.path.join(home, "extras/local_venv/bin/python3"),
+        os.path.join(home, ".venv/bin/python3"),
     ]
     if "VIRTUAL_ENV" in os.environ:
-        search_patterns.insert(0, os.path.join(os.environ["VIRTUAL_ENV"], "lib/python*/site-packages"))
+        candidate_pythons.insert(0, os.path.join(os.environ["VIRTUAL_ENV"], "bin/python3"))
 
-    found = False
-    for pat in search_patterns:
-        matches = glob.glob(pat)
-        if matches:
-            sys.path.insert(0, matches[0])
+    for py_bin in candidate_pythons:
+        if os.path.isfile(py_bin) and os.path.realpath(py_bin) != os.path.realpath(sys.executable):
             try:
-                import swisseph as swe
-                found = True
-                break
-            except ImportError:
-                continue
+                os.execv(py_bin, [py_bin] + sys.argv)
+            except OSError:
+                pass
 
-    if not found:
-        sys.stderr.write(
-            "Error: 'pyswisseph' module not found.\n"
-            "Please run: python3 -m venv ~/.local/share/rice/venv && ~/.local/share/rice/venv/bin/pip install pyswisseph\n"
-        )
-        sys.exit(1)
+    sys.stderr.write(
+        "Error: 'pyswisseph' module not found.\n"
+        "Please run: python3 -m venv ~/.local/share/rice/venv && ~/.local/share/rice/venv/bin/pip install pyswisseph\n"
+    )
+    sys.exit(1)
 
 # Lahiri ayanamsa (official Indian Astronomical Ephemeris standard)
 swe.set_sid_mode(swe.SIDM_LAHIRI)
