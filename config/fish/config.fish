@@ -45,10 +45,19 @@ if status is-interactive
     end
 end
 
-# User environment & tools
-test -f "/home/creserver/.openclaw/completions/openclaw.fish"; and source "/home/creserver/.openclaw/completions/openclaw.fish"
-fish_add_path /home/creserver/.opencode/bin
-set -gx PATH "/home/creserver/.local/bin" $PATH
-alias fd fdfind
-test -f "/home/creserver/extras/local_venv/bin/activate.fish"; and source "/home/creserver/extras/local_venv/bin/activate.fish"
+# User environment & tools (cross-distro portable)
+test -f "$HOME/.openclaw/completions/openclaw.fish"; and source "$HOME/.openclaw/completions/openclaw.fish"
+test -d "$HOME/.opencode/bin"; and fish_add_path "$HOME/.opencode/bin"
+fish_add_path "$HOME/.local/bin"
+
+if type -q fdfind
+    alias fd fdfind
+end
+
+# Activate Python virtual environment if present
+if test -f "$HOME/.local/share/rice/venv/bin/activate.fish"
+    source "$HOME/.local/share/rice/venv/bin/activate.fish"
+else if test -f "$HOME/extras/local_venv/bin/activate.fish"
+    source "$HOME/extras/local_venv/bin/activate.fish"
+end
 

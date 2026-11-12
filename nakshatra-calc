@@ -11,9 +11,36 @@ from pathlib import Path
 try:
     import swisseph as swe
 except ImportError:
-    # Try the venv
-    sys.path.insert(0, "/home/creserver/extras/local_venv/lib/python3.12/site-packages")
-    import swisseph as swe
+    # Dynamic virtualenv search across standard rice locations and user venvs
+    import glob
+    home = os.path.expanduser("~")
+    search_patterns = [
+        os.path.join(home, ".local/share/rice/venv/lib/python*/site-packages"),
+        os.path.join(home, "extras/local_venv/lib/python*/site-packages"),
+        os.path.join(home, ".venv/lib/python*/site-packages"),
+        os.path.join(home, "venv/lib/python*/site-packages"),
+    ]
+    if "VIRTUAL_ENV" in os.environ:
+        search_patterns.insert(0, os.path.join(os.environ["VIRTUAL_ENV"], "lib/python*/site-packages"))
+
+    found = False
+    for pat in search_patterns:
+        matches = glob.glob(pat)
+        if matches:
+            sys.path.insert(0, matches[0])
+            try:
+                import swisseph as swe
+                found = True
+                break
+            except ImportError:
+                continue
+
+    if not found:
+        sys.stderr.write(
+            "Error: 'pyswisseph' module not found.\n"
+            "Please run: python3 -m venv ~/.local/share/rice/venv && ~/.local/share/rice/venv/bin/pip install pyswisseph\n"
+        )
+        sys.exit(1)
 
 # Lahiri ayanamsa (official Indian Astronomical Ephemeris standard)
 swe.set_sid_mode(swe.SIDM_LAHIRI)

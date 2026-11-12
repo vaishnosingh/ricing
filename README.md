@@ -125,14 +125,18 @@ cd ~/.local/share/glyph
 ./install.fish
 ```
 * **Automatic Full Snapshot Backup:** Saved to `~/.config/ricing-backups/backup-<TIMESTAMP>/` with a full manifest of all pre-existing configurations.
-* **Arch Linux:** Automatically detects Arch and offers to install required dependencies and AUR packages.
-* **Pop!_OS / Ubuntu / Debian / Fedora / NixOS:** Automatically deploys all dotfiles, fonts, systemd timers, and QuickShell environments cleanly.
+* **Handles Half-Configured & Dirty Files:** Existing, broken, or half-customized dotfiles are cleanly preserved in the backup snapshot and replaced with pristine links, avoiding configuration collisions or file corruption.
+* **Arch Linux:** Automatically detects Arch and installs required dependencies (`pacman` + `yay` AUR helper).
+* **Fedora Linux:** Automatically detects Fedora and installs required packages via `dnf`, enables the Hyprland Copr repo for QuickShell, and configures an isolated Python environment for astronomical calculations.
+* **Pop!_OS / Ubuntu / Debian / NixOS:** Deploys all dotfiles, fonts, systemd timers, and QuickShell environments cleanly via portable symlink mode.
 * **Automatic Error Recovery:** If any error occurs during installation, the script catches it and offers an automatic instant rollback to your previous setup.
 
 ---
 
-### 2. One-Command Rollback / Restore
-If you ever want to uninstall or restore your desktop exactly as it was:
+### 2. One-Command Rollback & Historical Checkpoints
+If you ever want to undo the installation or switch to historical states:
+
+#### A. Instant Revert to Previous Desktop (Pre-Install Snapshot)
 ```bash
 cd ~/.local/share/glyph
 
@@ -143,6 +147,23 @@ cd ~/.local/share/glyph
 ./restore.fish
 ```
 This safely removes the ricing symlinks, restores your original files and directories from the backup snapshot, reloads Hyprland, and restarts your previous desktop configuration without any manual intervention.
+
+#### B. Reverting to the State Before Today's Changes
+If you wish to run the exact setup from before today's modifications (e.g., before the seconds counter, morphing digits, and celestial updates):
+```bash
+cd ~/.local/share/glyph
+
+# Check out the pre-modification checkpoint tag
+git checkout v1.0-checkpoint
+
+# Re-link configurations:
+./install.sh --links
+```
+To return to the latest version with all enhancements:
+```bash
+git checkout main
+./install.sh --links
+```
 
 ---
 

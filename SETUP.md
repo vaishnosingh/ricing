@@ -547,7 +547,7 @@ console.log('Next nakshatra in:', ((1-posInNak/100)*(360/27)/13.176*24).toFixed(
   - Vertically aligned top row: clock top ($y=140$) and bottom ($y=300$) balance the Bento grid's top row ($y=130$ to $y=314$).
   - Re-spaced left column: Date line ($y=338$), Greeting ($y=390$), Meta notifications row ($y=530$).
 - **MagicUI Morphing Text Physics:**
-  - Designed in [`MorphingDigit.qml`](file:///home/creserver/.local/share/glyph/config/quickshell/glyph/components/MorphingDigit.qml) using dual-layer cross-fading, micro-scaling ($1.0 \to 0.88$ on exit, $1.10 \to 1.0$ on entry), and vertical micro-drift.
+  - Designed in [`MorphingDigit.qml`](config/quickshell/glyph/components/MorphingDigit.qml) using dual-layer cross-fading, micro-scaling ($1.0 \to 0.88$ on exit, $1.10 \to 1.0$ on entry), and vertical micro-drift.
   - As digits transition over a 350ms window, the Nothing OS SPIR-V dot shader (`Dm`) causes the outgoing number's dots to shrink and dissolve like liquid droplets while the incoming number's dots swell and coalesce into place.
   - Independent digit cells: the tens and ones digits transition independently, eliminating any horizontal jitter.
 - **Precision Time Synchronization:**

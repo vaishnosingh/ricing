@@ -73,6 +73,18 @@ AUR=(
     zen-browser-bin
 )
 
+# ── Fedora Linux packages ─────────────────────────────────────────────────────
+FEDORA_PKGS=(
+    git curl jq python3 python3-pip python3-devel gcc gcc-c++ make
+    hyprland hypridle hyprsunset xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
+    sddm gnome-keyring geoclue2 upower xdg-user-dirs
+    pipewire pipewire-pulseaudio wireplumber NetworkManager bluez power-profiles-daemon
+    brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick
+    kitty fish starship fastfetch btop cava eza zoxide
+    thunar pavucontrol libnotify
+    google-noto-sans-fonts google-noto-color-emoji-fonts papirus-icon-theme adw-gtk3-theme
+)
+
 declare -A EXTRA=(
     [telegram]="telegram-desktop"
     [spotify]="spotify-launcher spicetify-cli spicetify-marketplace-bin"
@@ -186,6 +198,58 @@ install_arch_packages() {
 
     say "Installing AUR packages..."
     yay -S --needed --noconfirm "${AUR[@]}" || warn "Some AUR packages could not be installed"
+}
+
+# ── Step 2b: Package Management (Fedora Linux) ─────────────────────────────────
+install_fedora_packages() {
+    command -v dnf >/dev/null || return 0
+
+    say "Checking & installing Fedora Linux packages via DNF..."
+    sudo dnf install -y "${FEDORA_PKGS[@]}" || warn "Some DNF packages could not be installed from standard repos"
+
+    # QuickShell for Fedora: Copr check
+    if ! command -v quickshell >/dev/null 2>&1; then
+        info "Checking for QuickShell in Fedora Copr..."
+        if sudo dnf copr enable -y solopasha/hyprland 2>/dev/null; then
+            sudo dnf install -y quickshell 2>/dev/null || warn "QuickShell could not be installed from solopasha/hyprland Copr."
+        fi
+        if ! command -v quickshell >/dev/null 2>&1; then
+            warn "QuickShell not found. You can build it with: git clone https://git.outfoxxed.me/outfoxxed/quickshell && cmake -B build && cmake --build build"
+        fi
+    fi
+}
+
+# ── Step 2c: Python Environment & Astronomical Engine ─────────────────────────
+setup_python_env() {
+    say "Setting up astronomical calculation engine (Swiss Ephemeris)..."
+    local venv_dir="$HOME/.local/share/rice/venv"
+
+    # Check if swisseph is already importable via active/system python
+    if python3 -c "import swisseph" >/dev/null 2>&1; then
+        success "Swiss Ephemeris (pyswisseph) is available in current Python environment."
+        return 0
+    fi
+
+    # Check user local venv
+    if [ -f "$HOME/extras/local_venv/bin/python3" ] && "$HOME/extras/local_venv/bin/python3" -c "import swisseph" >/dev/null 2>&1; then
+        success "Swiss Ephemeris found in ~/extras/local_venv."
+        return 0
+    fi
+
+    # Create dedicated virtual environment for the rice
+    if [ ! -f "$venv_dir/bin/python3" ]; then
+        info "Creating isolated Python environment at $venv_dir (bypasses PEP 668 externally-managed restrictions)..."
+        mkdir -p "$(dirname "$venv_dir")"
+        python3 -m venv "$venv_dir" 2>/dev/null || python3 -m virtualenv "$venv_dir" 2>/dev/null || true
+    fi
+
+    if [ -x "$venv_dir/bin/pip" ]; then
+        if ! "$venv_dir/bin/python3" -c "import swisseph" >/dev/null 2>&1; then
+            info "Installing pyswisseph into $venv_dir..."
+            "$venv_dir/bin/pip" install --quiet pyswisseph || warn "Could not install pyswisseph automatically. Please run: pip install pyswisseph"
+        fi
+        success "Swiss Ephemeris ready in $venv_dir."
+    fi
 }
 
 # ── Step 3: Symlinking and Configuration ───────────────────────────────────────
@@ -302,6 +366,7 @@ case "${1:-}" in
         ;;
     --links)
         backup_desktop
+        setup_python_env
         deploy_configurations
         reload_desktop
         echo ""
@@ -312,9 +377,12 @@ case "${1:-}" in
         backup_desktop
         if command -v pacman >/dev/null 2>&1; then
             install_arch_packages
+        elif command -v dnf >/dev/null 2>&1; then
+            install_fedora_packages
         else
-            info "Non-Arch Linux detected. Proceeding with configuration deployment..."
+            info "Non-Arch/Fedora Linux detected. Proceeding with configuration deployment..."
         fi
+        setup_python_env
         deploy_configurations
         reload_desktop
         echo ""
