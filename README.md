@@ -107,27 +107,53 @@ Strictly engineered for peak efficiency and low memory overhead:
 - **Shell:** Fish
 - **Python:** Python 3.10+ with `pyswisseph` (for Swiss Ephemeris astronomical calculations)
 
-### Automated Install (Arch Linux)
+## 🚀 One-Command Installation & Safe Rollback
+
+> [!IMPORTANT]
+> **Zero Risk:** The installer **automatically creates a complete snapshot backup** of your existing desktop and Hyprland configuration before making any changes. If anything fails or you ever wish to revert, running `./restore.sh` instantly restores your desktop to its exact prior state!
+
+### 1. One-Command Install (All Linux Distributions)
+Clone and run the installer from either **Bash** or **Fish**:
 ```bash
 git clone https://github.com/vaishnosingh/ricing.git ~/.local/share/glyph
 cd ~/.local/share/glyph
+
+# Run from Bash:
 ./install.sh
-```
 
-### Symlinks Only (Pop!_OS / Ubuntu / Debian / Fedora)
-If you already have your base packages and window manager installed:
+# Or run from Fish:
+./install.fish
+```
+* **Automatic Full Snapshot Backup:** Saved to `~/.config/ricing-backups/backup-<TIMESTAMP>/` with a full manifest of all pre-existing configurations.
+* **Arch Linux:** Automatically detects Arch and offers to install required dependencies and AUR packages.
+* **Pop!_OS / Ubuntu / Debian / Fedora / NixOS:** Automatically deploys all dotfiles, fonts, systemd timers, and QuickShell environments cleanly.
+* **Automatic Error Recovery:** If any error occurs during installation, the script catches it and offers an automatic instant rollback to your previous setup.
+
+---
+
+### 2. One-Command Rollback / Restore
+If you ever want to uninstall or restore your desktop exactly as it was:
 ```bash
-git clone https://github.com/vaishnosingh/ricing.git ~/.local/share/glyph
 cd ~/.local/share/glyph
-./install.sh --links
-```
 
-### Enable Astronomical Ephemeris Service
-The astronomical engine computes real-time Nakshatra and Tithi coordinates:
-```bash
-systemctl --user daemon-reload
-systemctl --user enable --now nakshatra-calc.timer
+# From Bash:
+./restore.sh
+
+# From Fish:
+./restore.fish
 ```
+This safely removes the ricing symlinks, restores your original files and directories from the backup snapshot, reloads Hyprland, and restarts your previous desktop configuration without any manual intervention.
+
+---
+
+### 3. Advanced Installer Options
+| Command | Action |
+| :--- | :--- |
+| `./install.sh` | Full installation with automatic pre-install backup |
+| `./install.sh --links` | Symlinks & configurations only (fast setup) |
+| `./install.sh --backup-only` | Takes a complete snapshot of your current desktop and exits |
+| `./install.sh --restore` (or `./restore.sh`) | Restores the latest backup snapshot |
+| `./restore.sh <path_to_backup>` | Restores a specific timestamped backup snapshot |
 
 ---
 
