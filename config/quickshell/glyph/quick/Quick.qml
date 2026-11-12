@@ -119,7 +119,14 @@ PanelWindow {
                             sub: !on ? "off" : (Networking.connectivity === NetworkConnectivity.Portal ? "sign in · " : "") + (root.net?.name ?? "no network")
                             picked: root.pick === "wifi"
                             onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
-                            onMenu: root.pick = picked ? "" : "wifi"
+                            onMenu: {
+                                if (picked) {
+                                    root.pick = "";
+                                } else {
+                                    if (!Networking.wifiEnabled) Networking.wifiEnabled = true;
+                                    root.pick = "wifi";
+                                }
+                            }
                         }
                         Pill {
                             on: root.bt?.enabled ?? false
@@ -128,7 +135,14 @@ PanelWindow {
                             sub: !on ? "off" : root.btDev?.name ?? "on"
                             picked: root.pick === "bt"
                             onClicked: if (root.bt) root.bt.enabled = !root.bt.enabled
-                            onMenu: root.pick = picked ? "" : "bt"
+                            onMenu: {
+                                if (picked) {
+                                    root.pick = "";
+                                } else {
+                                    if (root.bt && !root.bt.enabled) root.bt.enabled = true;
+                                    root.pick = "bt";
+                                }
+                            }
                         }
                     }
 
@@ -397,7 +411,7 @@ PanelWindow {
         Icon { anchors.centerIn: parent; text: parent.icon }
         TapHandler { onTapped: { root.pin(); parent.clicked(); } }
     }
-    // pill: on -- white, black text. Right click -- list of networks/devices, the chevron shows whether it is open
+    // pill: on -- white, black text. Left click body to toggle, chevron button to expand picker dropdown
     component Pill: Rectangle {
         id: pill
         property bool on
@@ -412,40 +426,87 @@ PanelWindow {
         radius: 38
         color: on ? Theme.fg : Theme.s2
         Behavior on color { ColorAnimation { duration: Theme.t } }
-        Rectangle {
-            id: pi
-            x: 12
-            anchors.verticalCenter: parent.verticalCenter
-            width: 52
-            height: 52
-            radius: 26
-            color: pill.on ? Theme.ink : Theme.s3
-            Icon { anchors.centerIn: parent; text: pill.icon; font.pixelSize: 22 }
-        }
-        Column {
-            anchors { left: pi.right; leftMargin: 12; right: chev.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-            Text { text: pill.name; font { family: Theme.ui; pixelSize: 16; weight: Font.DemiBold } color: pill.on ? Theme.ink : Theme.fg }
-            Text {
-                width: parent.width
-                elide: Text.ElideRight
-                text: pill.sub
-                font { family: Theme.mono; pixelSize: 11; letterSpacing: 0.9; capitalization: Font.AllUppercase }
-                color: pill.on ? Theme.ink : Theme.fg
-                opacity: 0.6
+
+        // Left toggle area: icon + labels
+        Item {
+            id: toggleArea
+            anchors { left: parent.left; top: parent.top; bottom: parent.bottom; right: chevBtn.left }
+
+            Rectangle {
+                id: pi
+                x: 12
+                anchors.verticalCenter: parent.verticalCenter
+                width: 52
+                height: 52
+                radius: 26
+                color: pill.on ? Theme.ink : Theme.s3
+                Icon { anchors.centerIn: parent; text: pill.icon; font.pixelSize: 22 }
+            }
+
+            Column {
+                anchors { left: pi.right; leftMargin: 12; right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                Text { text: pill.name; font { family: Theme.ui; pixelSize: 16; weight: Font.DemiBold } color: pill.on ? Theme.ink : Theme.fg }
+                Text {
+                    width: parent.width
+                    elide: Text.ElideRight
+                    text: pill.sub
+                    font { family: Theme.mono; pixelSize: 11; letterSpacing: 0.9; capitalization: Font.AllUppercase }
+                    color: pill.on ? Theme.ink : Theme.fg
+                    opacity: 0.6
+                }
+            }
+
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+            TapHandler {
+                onTapped: { root.pin(); pill.clicked(); }
+            }
+            TapHandler {
+                acceptedButtons: Qt.RightButton
+                onTapped: { root.pin(); pill.menu(); }
             }
         }
-        Icon {
-            id: chev
-            anchors { right: parent.right; rightMargin: 20; verticalCenter: parent.verticalCenter }
-            text: "\u{F0140}"
-            font.pixelSize: 18
-            color: pill.on ? Theme.ink : Theme.fg
-            opacity: pill.picked ? 1 : 0.4
-            rotation: pill.picked ? 180 : 0
-            Behavior on rotation { NumberAnimation { duration: Theme.t; easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.glide } }
+
+        // Right dropdown button: chevron indicator and picker trigger
+        Item {
+            id: chevBtn
+            anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+            width: 48
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 38
+                height: 38
+                radius: 19
+                color: chevHov.hovered ? (pill.on ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)) : "transparent"
+                Behavior on color { ColorAnimation { duration: Theme.t } }
+
+                Icon {
+                    id: chev
+                    anchors.centerIn: parent
+                    text: "\u{F0140}"
+                    font.pixelSize: 18
+                    color: pill.on ? Theme.ink : Theme.fg
+                    opacity: pill.picked ? 1 : (chevHov.hovered ? 0.9 : 0.45)
+                    rotation: pill.picked ? 180 : 0
+                    Behavior on rotation { NumberAnimation { duration: Theme.t; easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.glide } }
+                }
+            }
+
+            HoverHandler {
+                id: chevHov
+                cursorShape: Qt.PointingHandCursor
+            }
+
+            TapHandler {
+                onTapped: { root.pin(); pill.menu(); }
+            }
+            TapHandler {
+                acceptedButtons: Qt.RightButton
+                onTapped: { root.pin(); pill.menu(); }
+            }
         }
-        TapHandler { onTapped: { root.pin(); pill.clicked(); } }
-        TapHandler { acceptedButtons: Qt.RightButton; onTapped: { root.pin(); pill.menu(); } }
     }
     // round tile 68: on -- white circle. Right click -- menu (for record -- recording settings), open -- label white
     component Tile: Column {
