@@ -1406,6 +1406,23 @@ run_interactive_wizard() {
         systemctl --user enable --now nakshatra-calc.timer 2>/dev/null || true
     fi
 
+    # Bluetooth stability & adapter power control
+    if command -v systemctl >/dev/null 2>&1; then
+        sudo systemctl enable --now bluetooth.service 2>/dev/null || true
+    fi
+    if [ -f "/etc/bluetooth/main.conf" ] && command -v sudo >/dev/null 2>&1; then
+        sudo sed -i 's/^#*FastConnectable *=.*/FastConnectable = true/' /etc/bluetooth/main.conf 2>/dev/null || true
+        sudo sed -i 's/^#*JustWorksRepairing *=.*/JustWorksRepairing = always/' /etc/bluetooth/main.conf 2>/dev/null || true
+        sudo sed -i 's/^#*AutoEnable *=.*/AutoEnable = true/' /etc/bluetooth/main.conf 2>/dev/null || true
+    fi
+    if [ -d "/etc/udev/rules.d" ] && command -v sudo >/dev/null 2>&1; then
+        sudo tee /etc/udev/rules.d/50-bluetooth-power.rules >/dev/null 2>&1 << 'EOF' || true
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="8087", ATTR{power/control}="on"
+ACTION=="add", SUBSYSTEM=="bluetooth", ATTR{power/control}="on"
+EOF
+        sudo udevadm control --reload 2>/dev/null || true
+    fi
+
     # Single smooth atomic reload (zero flashing during install)
     unfreeze_and_atomic_reload "$selected_scale" "$mon_scale"
 
