@@ -134,7 +134,7 @@ ARCH_PKGS=(
     hyprland hypridle hyprsunset hyprpicker xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
     sddm quickshell polkit-gnome gnome-keyring geoclue upower xdg-user-dirs
     pipewire pipewire-pulse pipewire-alsa wireplumber networkmanager bluez bluez-utils power-profiles-daemon
-    brightnessctl playerctl wl-clipboard cliphist grim slurp swappy imagemagick libvips libqalculate
+    brightnessctl playerctl wl-clipboard cliphist grim slurp swappy imagemagick libvips qalculate libqalculate
     gpu-screen-recorder ydotool libnotify trash-cli
     kitty fish starship fastfetch btop cava eza zoxide direnv
     thunar pavucontrol
@@ -149,7 +149,7 @@ FEDORA_PKGS=(
     hyprland hypridle hyprsunset xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
     sddm gnome-keyring geoclue2 upower xdg-user-dirs
     pipewire pipewire-pulseaudio wireplumber NetworkManager bluez power-profiles-daemon
-    brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick
+    brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick qalculate
     kitty fish starship fastfetch btop cava eza zoxide
     thunar pavucontrol libnotify
     google-noto-sans-fonts google-noto-color-emoji-fonts papirus-icon-theme adw-gtk3-theme
@@ -171,7 +171,7 @@ ZYPPER_PKGS=(
     hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
     sddm gnome-keyring geoclue2 upower xdg-user-dirs
     pipewire pipewire-pulseaudio wireplumber NetworkManager bluez
-    brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick
+    brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick qalculate
     kitty fish starship fastfetch btop
     thunar pavucontrol libnotify-tools
     noto-sans-fonts noto-coloremoji-fonts papirus-icon-theme
@@ -182,7 +182,7 @@ VOID_PKGS=(
     hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
     elogind polkit-gnome upower
     pipewire wireplumber
-    brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick
+    brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick qalculate
     kitty fish starship fastfetch btop
     thunar pavucontrol libnotify
     noto-fonts-ttf papirus-icon-theme
