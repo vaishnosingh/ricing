@@ -710,10 +710,10 @@ PanelWindow {
         // ── Center Moon Orb Interaction & Gravity Well ──────────────────────
         Item {
             id: orbInteractionArea
-            x: 700
-            y: 280
-            width: 520
-            height: 520
+            x: 720
+            y: 300
+            width: 480
+            height: 480
 
             readonly property real cx: width / 2
             readonly property real cy: height / 2
@@ -742,7 +742,7 @@ PanelWindow {
         // ── Center Moon Orb Hover Telemetry Badge ───────────────────────────
         Item {
             x: 760
-            y: 806
+            y: 785
             width: 400
             height: 32
             opacity: Theme.orbHovered ? 1.0 : 0.0

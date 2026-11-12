@@ -17,8 +17,6 @@ PanelWindow {
     WlrLayershell.namespace: "glyph-back"
 
     readonly property bool home: (Hyprland.focusedWorkspace?.toplevels.values.length ?? 0) === 0
-    property real phase: 0
-    Timer { running: root.home && orb.visible; interval: Media.playing ? 60 : 100; repeat: true; onTriggered: root.phase += 0.1 }
 
     // Solar time — updates every 30 s for smooth sun movement
     property real nowMs: Date.now()
@@ -235,10 +233,9 @@ PanelWindow {
             id: orb
             visible: Theme.state.orb && !wall.opaque
             anchors.centerIn: parent
-            width: 520
-            height: 520
+            width: 480
+            height: 480
             step: 8
-            phase: root.phase
             transform: Translate {
                 x: Theme.orbTiltX
                 y: Theme.orbTiltY
