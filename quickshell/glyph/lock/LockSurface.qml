@@ -1,0 +1,281 @@
+import QtQuick
+import Quickshell
+import Quickshell.Networking
+import Quickshell.Services.UPower
+import Quickshell.Wayland
+import qs
+import qs.components
+import qs.services
+
+// lock: Doto clock across the full width, date and weather as labels, layout/network/battery and notification count in the corners.
+// At the bottom an avatar in a ring of dots, name and a pill field: entered -- white dots, red caret. Wrong password -- everything red, the field shakes
+WlSessionLockSurface {
+    id: root
+
+    required property var auth // { buffer, fail, busy, leaving, submit() } from lock.qml
+    property string layout: "en"
+
+    color: Theme.bg
+
+    SystemClock { id: clock; precision: SystemClock.Seconds }
+    readonly property var en: Qt.locale("en_US")
+    readonly property var bat: UPower.displayDevice
+    property bool blink: true
+    Timer { running: true; interval: 500; repeat: true; onTriggered: root.blink = !root.blink }
+
+    // appearance: t 0->1 linear, each element has its own phase with ease-out-quart (like glide): orb and clock, labels, avatar --
+    // the ring lights up in a wave, the field grows from a dot. Password accepted (auth.leaving) -- t back and faster, the lock is released by lock.qml
+    property real t: 0
+    Behavior on t { NumberAnimation { duration: root.auth.leaving ? 450 : 1100 } }
+    Component.onCompleted: t = Qt.binding(() => root.auth.leaving ? 0 : 1)
+    function ph(a, b) { const x = Math.max(0, Math.min(1, (t - a) / (b - a))); return 1 - Math.pow(1 - x, 4); }
+    // password check: a wave runs over the entered dots
+    property real wave: 0
+    NumberAnimation on wave { running: root.auth.busy; from: 0; to: 1; duration: 700; loops: Animation.Infinite }
+
+    Stage {
+        id: stage
+        focus: true
+
+        Keys.onPressed: e => {
+            if (root.auth.leaving) return;
+            if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) root.auth.submit();
+            else if (e.key === Qt.Key_Escape) root.auth.buffer = "";
+            else if (e.key === Qt.Key_Backspace) root.auth.buffer = root.auth.buffer.slice(0, -1);
+            else if (e.text && e.text.charCodeAt(0) >= 32) { root.auth.buffer += e.text; root.auth.fail = false; }
+            else return;
+            e.accepted = true;
+        }
+
+        // Background orb + wallpaper
+        Item {
+            opacity: root.ph(0, 0.6)
+            Orb { visible: Theme.state.orb; anchors.centerIn: parent; width: 540; height: 540; step: 8 }
+            Wall { width: stage.width; height: stage.height; path: Theme.wallSrc(Theme.state.wall) }
+        }
+
+        // ── ORBITAL CLOCK RINGS ───────────────────────────────────────────────
+        // Three concentric arcs of dots centred on screen:
+        //   Outer ring  — Hours   (12 h)   n=60 dots,  radius=380
+        //   Middle ring — Minutes (60 min)  n=90 dots,  radius=320
+        //   Inner ring  — Seconds (60 s)    n=72 dots,  radius=260
+        // Lit dots = bright (Theme.fg), unlit = very dim (Theme.s3), gap dot = Theme.red at top
+        Item {
+            id: orbitalClock
+            anchors.centerIn: parent
+            width: 800
+            height: 800
+            opacity: root.ph(0.05, 0.55)
+
+            // ── Seconds ring (innermost, fastest) ───
+            Repeater {
+                model: 72
+                Rectangle {
+                    required property int index
+                    readonly property real frac: (clock.date.getSeconds()) / 60
+                    readonly property int litCount: Math.round(72 * frac)
+                    readonly property real angle: index / 72 * 2 * Math.PI - Math.PI / 2
+                    readonly property real R: 260
+                    x: 400 + R * Math.cos(angle) - width / 2
+                    y: 400 + R * Math.sin(angle) - height / 2
+                    width: 5
+                    height: 5
+                    radius: 2.5
+                    // top dot marks 12-o'clock
+                    color: index === 0 ? Theme.red
+                         : index < litCount ? Theme.fg
+                         : Theme.s3
+                    opacity: index === 0 ? 1 : index < litCount ? 0.95 : 0.25
+                    Behavior on color { ColorAnimation { duration: 80 } }
+                }
+            }
+
+            // ── Minutes ring (middle) ────────────────
+            Repeater {
+                model: 90
+                Rectangle {
+                    required property int index
+                    readonly property real frac: (clock.date.getMinutes() + clock.date.getSeconds() / 60) / 60
+                    readonly property int litCount: Math.round(90 * frac)
+                    readonly property real angle: index / 90 * 2 * Math.PI - Math.PI / 2
+                    readonly property real R: 320
+                    x: 400 + R * Math.cos(angle) - width / 2
+                    y: 400 + R * Math.sin(angle) - height / 2
+                    width: 6
+                    height: 6
+                    radius: 3
+                    color: index === 0 ? Theme.red
+                         : index < litCount ? Theme.fg
+                         : Theme.s3
+                    opacity: index === 0 ? 1 : index < litCount ? 0.90 : 0.20
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                    Behavior on opacity { NumberAnimation { duration: 300 } }
+                }
+            }
+
+            // ── Hours ring (outermost, slowest) ──────
+            Repeater {
+                model: 60
+                Rectangle {
+                    required property int index
+                    readonly property int h12: clock.date.getHours() % 12
+                    readonly property real frac: (h12 + clock.date.getMinutes() / 60) / 12
+                    readonly property int litCount: Math.round(60 * frac)
+                    readonly property real angle: index / 60 * 2 * Math.PI - Math.PI / 2
+                    readonly property real R: 380
+                    x: 400 + R * Math.cos(angle) - width / 2
+                    y: 400 + R * Math.sin(angle) - height / 2
+                    // Hour markers at 0,5,10…55: slightly larger
+                    readonly property bool marker: index % 5 === 0
+                    width: marker ? 9 : 7
+                    height: marker ? 9 : 7
+                    radius: width / 2
+                    color: index === 0 ? Theme.red
+                         : index < litCount ? Theme.fg
+                         : Theme.s3
+                    opacity: index === 0 ? 1 : index < litCount ? 1.0 : (marker ? 0.35 : 0.18)
+                    Behavior on color { ColorAnimation { duration: 400 } }
+                    Behavior on opacity { NumberAnimation { duration: 600 } }
+                }
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
+        // Date label above clock
+        Lb {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 170
+            text: root.en.toString(clock.date, "dddd · d MMMM")
+            px: 14
+            opacity: root.ph(0.15, 0.55)
+            transform: Translate { y: 16 * (1 - root.ph(0.15, 0.55)) }
+        }
+        // Digital clock (smaller on lock, orbital rings are the centrepiece)
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 230
+            opacity: root.ph(0, 0.5)
+            transform: Translate { y: -40 * (1 - root.ph(0, 0.5)) }
+            Num { text: Theme.hh(clock.date); font.pixelSize: 400 }
+            Num { text: ":"; font.pixelSize: 400; opacity: root.blink || !Theme.state.blink ? 1 : 0.2 }
+            Num { text: Qt.formatTime(clock.date, "mm"); font.pixelSize: 400 }
+        }
+        Lb {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 600
+            opacity: root.ph(0.25, 0.65)
+            transform: Translate { y: 16 * (1 - root.ph(0.25, 0.65)) }
+            text: [Weather.ok ? `${Math.round(Weather.now.temp)}° ${Weather.name(Weather.now.code)}` : "",
+                   Media.player?.trackTitle ? `${Media.player.trackTitle} — ${Media.player.trackArtist}` : ""].filter(Boolean).join(" · ")
+        }
+
+        Row {
+            anchors { right: parent.right; rightMargin: 44 }
+            y: 36
+            spacing: 16
+            opacity: root.ph(0.45, 0.85)
+            Lb { anchors.verticalCenter: parent.verticalCenter; text: root.layout }
+            Icon { anchors.verticalCenter: parent.verticalCenter; text: Networking.wifiEnabled ? "\u{F05A9}" : "\u{F05AA}"; font.pixelSize: 17 }
+            Rectangle {
+                visible: root.bat.isLaptopBattery
+                anchors.verticalCenter: parent.verticalCenter
+                width: 27
+                height: 13
+                radius: 7
+                color: "transparent"
+                border { width: 1.5; color: Theme.grey }
+                Rectangle { x: 3; y: 3; width: (parent.width - 6) * root.bat.percentage; height: parent.height - 6; radius: 4; color: Theme.fg }
+            }
+            Lb { visible: root.bat.isLaptopBattery; anchors.verticalCenter: parent.verticalCenter; text: Math.round(root.bat.percentage * 100) }
+        }
+        Row {
+            visible: Theme.state.unread > 0
+            opacity: root.ph(0.45, 0.85)
+            x: 44
+            anchors { bottom: parent.bottom; bottomMargin: 44 }
+            spacing: 16
+            Icon { anchors.verticalCenter: parent.verticalCenter; text: "\u{F009A}"; font.pixelSize: 17 }
+            Lb { anchors.verticalCenter: parent.verticalCenter; text: `${Theme.state.unread} notifications` }
+        }
+
+        Column {
+            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 120 }
+            spacing: 16
+
+            Item {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 96
+                height: 96
+                opacity: root.ph(0.3, 0.7)
+                transform: Translate { y: 24 * (1 - root.ph(0.3, 0.7)) }
+                Ring { anchors.fill: parent; n: 32; f: root.t > 0.35 ? 1 : 0 } // lights up and fades in a wave around the circle
+                // ~/.face as dots, like covers; no file -- Art gradient
+                Art { anchors { fill: parent; margins: 18 } url: `file://${Quickshell.env("HOME")}/.face`; step: 3 }
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: Quickshell.env("USER")
+                font { family: Theme.ui; pixelSize: 22 }
+                color: Theme.fg
+                opacity: root.ph(0.4, 0.75)
+                transform: Translate { y: 16 * (1 - root.ph(0.4, 0.75)) }
+            }
+
+            // field: entered -- dots, after the caret -- dimmed up to six
+            Rectangle {
+                id: pwd
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 58 + (380 - 58) * root.ph(0.5, 0.9) // grows from a dot into a pill
+                height: 58
+                radius: 29
+                opacity: root.ph(0.45, 0.6)
+                color: Theme.s1
+                border { width: 1; color: root.auth.fail ? Theme.red : Theme.s3 }
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 14
+                    opacity: root.ph(0.75, 1)
+                    Repeater {
+                        id: typed
+                        model: Math.min(root.auth.buffer.length, 16)
+                        // a new dot clicks in; while pam is thinking -- a wave runs over the dots
+                        Rectangle {
+                            required property int index
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 11
+                            height: 11
+                            radius: 5.5
+                            color: root.auth.fail ? Theme.red : Theme.fg
+                            opacity: root.auth.busy && Math.abs(root.wave * (typed.count + 2) - 1 - index) > 1.2 ? 0.3 : 1
+                            NumberAnimation on scale { from: 0.2; to: 1; duration: 180; easing.type: Easing.OutCubic }
+                        }
+                    }
+                    Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 2; height: 24; color: Theme.red; opacity: root.blink ? 1 : 0 }
+                    Repeater {
+                        model: Math.max(0, 6 - root.auth.buffer.length)
+                        Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 11; height: 11; radius: 5.5; color: Theme.s3 }
+                    }
+                }
+
+                SequentialAnimation {
+                    id: shake
+                    loops: 2
+                    NumberAnimation { target: pwd; property: "anchors.horizontalCenterOffset"; to: -10; duration: 50 }
+                    NumberAnimation { target: pwd; property: "anchors.horizontalCenterOffset"; to: 10; duration: 80 }
+                    NumberAnimation { target: pwd; property: "anchors.horizontalCenterOffset"; to: 0; duration: 50 }
+                }
+                Connections {
+                    target: root.auth
+                    function onFailChanged() { if (root.auth.fail) shake.restart(); }
+                }
+            }
+            Lb {
+                anchors.horizontalCenter: parent.horizontalCenter
+                opacity: root.ph(0.8, 1)
+                text: root.auth.busy ? "checking…" : root.auth.fail ? "wrong password · try again" : "enter password"
+                color: root.auth.fail ? Theme.red : Theme.grey
+            }
+        }
+    }
+}

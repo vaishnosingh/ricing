@@ -1,0 +1,236 @@
+#!/usr/bin/env python3
+"""
+nakshatra-calc — Swiss Ephemeris nakshatra transition calculator
+Writes ~/.local/state/rice/nakshatra.json with exact transition timestamps.
+Accuracy: ±1-2 seconds (Swiss Ephemeris + Lahiri ayanamsa).
+Run on startup and daily at midnight via systemd timer.
+"""
+import sys, json, time, os
+from pathlib import Path
+
+try:
+    import swisseph as swe
+except ImportError:
+    # Try the venv
+    sys.path.insert(0, "/home/creserver/extras/local_venv/lib/python3.12/site-packages")
+    import swisseph as swe
+
+# Lahiri ayanamsa (official Indian Astronomical Ephemeris standard)
+swe.set_sid_mode(swe.SIDM_LAHIRI)
+
+NAKSHATRA_COUNT = 27
+NAK_SPAN = 360.0 / NAKSHATRA_COUNT   # 13.3333...°
+
+RASHI_COUNT = 12
+RASHI_SPAN = 30.0                    # 30.0°
+
+TITHI_COUNT = 30
+TITHI_SPAN = 12.0                    # 12.0° separation between Moon and Sun
+
+TITHI_NAMES = [
+    "Pratipada", "Dwitiya", "Tritiya", "Chaturthi", "Panchami",
+    "Shashthi", "Saptami", "Ashtami", "Navami", "Dashami",
+    "Ekadashi", "Dwadashi", "Trayodashi", "Chaturdashi", "Purnima",
+    "Pratipada", "Dwitiya", "Tritiya", "Chaturthi", "Panchami",
+    "Shashthi", "Saptami", "Ashtami", "Navami", "Dashami",
+    "Ekadashi", "Dwadashi", "Trayodashi", "Chaturdashi", "Amavasya"
+]
+TITHI_HINDI = [
+    "प्रतिपदा", "द्वितीया", "तृतीया", "चतुर्थी", "पंचमी",
+    "षष्ठी", "सप्तमी", "अष्टमी", "नवमी", "दशमी",
+    "एकादशी", "द्वादशी", "त्रयोदशी", "चतुर्दशी", "पूर्णिमा",
+    "प्रतिपदा", "द्वितीया", "तृतीया", "चतुर्थी", "पंचमी",
+    "षष्ठी", "सप्तमी", "अष्टमी", "नवमी", "दशमी",
+    "एकादशी", "द्वादशी", "त्रयोदशी", "चतुर्दशी", "अमावस्या"
+]
+
+RASHI_EN = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
+RASHI_SA = ["Mesha", "Vrishabha", "Mithuna", "Karka", "Simha", "Kanya", "Tula", "Vrischika", "Dhanu", "Makara", "Kumbha", "Meena"]
+RASHI_HI = ["मेष", "वृषभ", "मिथुन", "कर्क", "सिंह", "कन्या", "तुला", "वृश्चिक", "धनु", "मकर", "कुम्भ", "मीन"]
+
+NAMES_EN = [
+    "Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra",
+    "Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni",
+    "Uttara Phalguni","Hasta","Chitra","Swati","Vishakha",
+    "Anuradha","Jyeshtha","Mula","Purva Ashadha","Uttara Ashadha",
+    "Shravana","Dhanishtha","Shatabhisha","Purva Bhadrapada",
+    "Uttara Bhadrapada","Revati"
+]
+NAMES_HI = [
+    "अश्विनी","भरणी","कृत्तिका","रोहिणी","मृगशिरा","आर्द्रा",
+    "पुनर्वसु","पुष्य","आश्लेषा","मघा","पूर्व फाल्गुनी",
+    "उत्तर फाल्गुनी","हस्त","चित्रा","स्वाती","विशाखा",
+    "अनुराधा","ज्येष्ठा","मूल","पूर्वाषाढ़ा","उत्तराषाढ़ा",
+    "श्रवण","धनिष्ठा","शतभिषा","पूर्व भाद्रपद",
+    "उत्तर भाद्रपद","रेवती"
+]
+
+def unix_ms_to_jd(unix_ms: float) -> float:
+    return unix_ms / 86_400_000.0 + 2440587.5
+
+def moon_sid_lon(unix_ms: float) -> float:
+    """Return Moon's sidereal longitude (Lahiri) in degrees [0, 360)."""
+    jd = unix_ms_to_jd(unix_ms)
+    flags = swe.FLG_SIDEREAL | swe.FLG_SPEED
+    result, _ = swe.calc_ut(jd, swe.MOON, flags)
+    return result[0] % 360.0
+
+def nakshatra_idx(unix_ms: float) -> int:
+    return int(moon_sid_lon(unix_ms) / NAK_SPAN)
+
+def find_boundary_crossing(after_ms: int, boundary_lon: float) -> int:
+    """
+    Binary-search the exact millisecond the Moon's sidereal longitude
+    crosses boundary_lon (in degrees).  Handles 360°→0° wraparound.
+    Returns milliseconds (Unix epoch).
+    """
+    # Generous search window: 2 × full nakshatra duration (~50h)
+    lo = after_ms + 1_000            # 1 s after
+    hi = after_ms + 50 * 3_600_000   # 50 h after
+
+    # For wraparound case (boundary near 0°), shift reference frame
+    wrap = boundary_lon < 1.0
+
+    def lon_at(ms):
+        l = moon_sid_lon(ms)
+        if wrap and l > 350:
+            l -= 360.0
+        return l
+
+    for _ in range(60):               # 60 bisections → ~1 ms precision
+        mid = (lo + hi) // 2
+        if lon_at(mid) < boundary_lon:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) // 2
+
+def moon_sun_diff(unix_ms: float) -> float:
+    """Longitudinal angular separation between Moon and Sun in degrees [0, 360)."""
+    jd = unix_ms_to_jd(unix_ms)
+    res_m, _ = swe.calc_ut(jd, swe.MOON)
+    res_s, _ = swe.calc_ut(jd, swe.SUN)
+    return (res_m[0] - res_s[0]) % 360.0
+
+def tithi_idx(unix_ms: float) -> int:
+    return int(moon_sun_diff(unix_ms) / TITHI_SPAN)
+
+def find_tithi_crossing(after_ms: int, boundary_deg: float) -> int:
+    lo = after_ms + 1_000
+    hi = after_ms + 48 * 3_600_000
+    wrap = boundary_deg < 1.0
+
+    def diff_at(ms):
+        d = moon_sun_diff(ms)
+        if wrap and d > 350:
+            d -= 360.0
+        return d
+
+    for _ in range(50):
+        mid = (lo + hi) // 2
+        if diff_at(mid) < boundary_deg:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) // 2
+
+def rashi_idx(unix_ms: float) -> int:
+    return int(moon_sid_lon(unix_ms) / RASHI_SPAN)
+
+def compute(days_ahead: int = 8) -> dict:
+    now_ms    = int(time.time() * 1000)
+    cur_lon   = moon_sid_lon(now_ms)
+    cur_idx   = nakshatra_idx(now_ms)
+    cur_rashi = int(cur_lon / RASHI_SPAN)
+    cur_diff  = moon_sun_diff(now_ms)
+    cur_tithi = int(cur_diff / TITHI_SPAN)
+    cur_paksha = "Shukla" if cur_tithi < 15 else "Krishna"
+
+    # Fraction through current nakshatra
+    fraction = (cur_lon % NAK_SPAN) / NAK_SPAN
+
+    transitions = []
+    search_from = now_ms
+    idx = cur_idx
+
+    # Compute enough transitions to cover days_ahead
+    for _ in range(days_ahead + 2):
+        next_idx    = (idx + 1) % NAKSHATRA_COUNT
+        boundary    = next_idx * NAK_SPAN          # start of next nakshatra
+        crossing_ms = find_boundary_crossing(search_from, boundary)
+        next_rashi  = int((boundary + 0.0001) / RASHI_SPAN) % RASHI_COUNT
+
+        transitions.append({
+            "idx":       next_idx,
+            "nameEn":    NAMES_EN[next_idx],
+            "nameHi":    NAMES_HI[next_idx],
+            "rashiIdx":  next_rashi,
+            "rashiEn":   RASHI_EN[next_rashi],
+            "rashiSa":   RASHI_SA[next_rashi],
+            "rashiHi":   RASHI_HI[next_rashi],
+            "ts":        crossing_ms,
+        })
+        search_from = crossing_ms + 1_000
+        idx = next_idx
+        # Stop if we've gone far enough
+        if crossing_ms > now_ms + days_ahead * 86_400_000:
+            break
+
+    # Compute tithi transitions
+    tithi_transitions = []
+    t_search_from = now_ms
+    t_idx = cur_tithi
+    for _ in range(days_ahead * 2 + 2):
+        next_t_idx = (t_idx + 1) % TITHI_COUNT
+        t_boundary = next_t_idx * TITHI_SPAN
+        t_crossing_ms = find_tithi_crossing(t_search_from, t_boundary)
+        t_paksha = "Shukla" if next_t_idx < 15 else "Krishna"
+
+        tithi_transitions.append({
+            "idx":       next_t_idx,
+            "nameEn":    TITHI_NAMES[next_t_idx],
+            "nameHi":    TITHI_HINDI[next_t_idx],
+            "paksha":    t_paksha,
+            "ts":        t_crossing_ms,
+        })
+        t_search_from = t_crossing_ms + 1_000
+        t_idx = next_t_idx
+        if t_crossing_ms > now_ms + days_ahead * 86_400_000:
+            break
+
+    return {
+        "generatedAt": now_ms,
+        "idx":      cur_idx,
+        "nameEn":   NAMES_EN[cur_idx],
+        "nameHi":   NAMES_HI[cur_idx],
+        "rashiIdx": cur_rashi,
+        "rashiEn":  RASHI_EN[cur_rashi],
+        "rashiSa":  RASHI_SA[cur_rashi],
+        "rashiHi":  RASHI_HI[cur_rashi],
+        "tithiIdx": cur_tithi,
+        "tithiName": TITHI_NAMES[cur_tithi],
+        "tithiHi":  TITHI_HINDI[cur_tithi],
+        "tithiPaksha": cur_paksha,
+        "fraction": round(fraction, 6),
+        "transitions": transitions,
+        "tithiTransitions": tithi_transitions,
+    }
+
+def main():
+    out_path = Path(os.path.expanduser("~/.local/state/rice/nakshatra.json"))
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    print("Computing nakshatra transitions (Swiss Ephemeris + Lahiri)…", flush=True)
+    data = compute(days_ahead=8)
+    out_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+
+    cur = data["nameEn"]
+    nxt = data["transitions"][0]
+    from datetime import datetime
+    nxt_time = datetime.fromtimestamp(nxt["ts"] / 1000).strftime("%d %b %H:%M:%S")
+    print(f"Current: {cur} ({data['fraction']*100:.1f}% done)")
+    print(f"Next:    {nxt['nameEn']} at {nxt_time} IST")
+    print(f"Written: {out_path}")
+
+if __name__ == "__main__":
+    main()

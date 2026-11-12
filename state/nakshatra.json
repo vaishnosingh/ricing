@@ -1,0 +1,155 @@
+{
+  "generatedAt": 1794400584187,
+  "idx": 17,
+  "nameEn": "Jyeshtha",
+  "nameHi": "ज्येष्ठा",
+  "rashiIdx": 7,
+  "rashiEn": "Scorpio",
+  "rashiSa": "Vrischika",
+  "rashiHi": "वृश्चिक",
+  "tithiIdx": 2,
+  "tithiName": "Tritiya",
+  "tithiHi": "तृतीया",
+  "tithiPaksha": "Shukla",
+  "fraction": 0.24354,
+  "transitions": [
+    {
+      "idx": 18,
+      "nameEn": "Mula",
+      "nameHi": "मूल",
+      "rashiIdx": 8,
+      "rashiEn": "Sagittarius",
+      "rashiSa": "Dhanu",
+      "rashiHi": "धनु",
+      "ts": 1794473358751
+    },
+    {
+      "idx": 19,
+      "nameEn": "Purva Ashadha",
+      "nameHi": "पूर्वाषाढ़ा",
+      "rashiIdx": 8,
+      "rashiEn": "Sagittarius",
+      "rashiSa": "Dhanu",
+      "rashiHi": "धनु",
+      "ts": 1794570447934
+    },
+    {
+      "idx": 20,
+      "nameEn": "Uttara Ashadha",
+      "nameHi": "उत्तराषाढ़ा",
+      "rashiIdx": 8,
+      "rashiEn": "Sagittarius",
+      "rashiSa": "Dhanu",
+      "rashiHi": "धनु",
+      "ts": 1794668076539
+    },
+    {
+      "idx": 21,
+      "nameEn": "Shravana",
+      "nameHi": "श्रवण",
+      "rashiIdx": 9,
+      "rashiEn": "Capricorn",
+      "rashiSa": "Makara",
+      "rashiHi": "मकर",
+      "ts": 1794765546473
+    },
+    {
+      "idx": 22,
+      "nameEn": "Dhanishtha",
+      "nameHi": "धनिष्ठा",
+      "rashiIdx": 9,
+      "rashiEn": "Capricorn",
+      "rashiSa": "Makara",
+      "rashiHi": "मकर",
+      "ts": 1794862030123
+    },
+    {
+      "idx": 23,
+      "nameEn": "Shatabhisha",
+      "nameHi": "शतभिषा",
+      "rashiIdx": 10,
+      "rashiEn": "Aquarius",
+      "rashiSa": "Kumbha",
+      "rashiHi": "कुम्भ",
+      "ts": 1794956693370
+    },
+    {
+      "idx": 24,
+      "nameEn": "Purva Bhadrapada",
+      "nameHi": "पूर्व भाद्रपद",
+      "rashiIdx": 10,
+      "rashiEn": "Aquarius",
+      "rashiSa": "Kumbha",
+      "rashiHi": "कुम्भ",
+      "ts": 1795048836398
+    },
+    {
+      "idx": 25,
+      "nameEn": "Uttara Bhadrapada",
+      "nameHi": "उत्तर भाद्रपद",
+      "rashiIdx": 11,
+      "rashiEn": "Pisces",
+      "rashiSa": "Meena",
+      "rashiHi": "मीन",
+      "ts": 1795138006464
+    }
+  ],
+  "tithiTransitions": [
+    {
+      "idx": 3,
+      "nameEn": "Chaturthi",
+      "nameHi": "चतुर्थी",
+      "paksha": "Shukla",
+      "ts": 1794487192069
+    },
+    {
+      "idx": 4,
+      "nameEn": "Panchami",
+      "nameHi": "पंचमी",
+      "paksha": "Shukla",
+      "ts": 1794582784934
+    },
+    {
+      "idx": 5,
+      "nameEn": "Shashthi",
+      "nameHi": "षष्ठी",
+      "paksha": "Shukla",
+      "ts": 1794678870244
+    },
+    {
+      "idx": 6,
+      "nameEn": "Saptami",
+      "nameHi": "सप्तमी",
+      "paksha": "Shukla",
+      "ts": 1794774699861
+    },
+    {
+      "idx": 7,
+      "nameEn": "Ashtami",
+      "nameHi": "अष्टमी",
+      "paksha": "Shukla",
+      "ts": 1794869406361
+    },
+    {
+      "idx": 8,
+      "nameEn": "Navami",
+      "nameHi": "नवमी",
+      "paksha": "Shukla",
+      "ts": 1794962137257
+    },
+    {
+      "idx": 9,
+      "nameEn": "Dashami",
+      "nameHi": "दशमी",
+      "paksha": "Shukla",
+      "ts": 1795052199769
+    },
+    {
+      "idx": 10,
+      "nameEn": "Ekadashi",
+      "nameHi": "एकादशी",
+      "paksha": "Shukla",
+      "ts": 1795139167298
+    }
+  ]
+}

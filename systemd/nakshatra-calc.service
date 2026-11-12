@@ -1,0 +1,9 @@
+[Unit]
+Description=Nakshatra transition calculator (Swiss Ephemeris)
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/creserver/extras/local_venv/bin/python3 /home/creserver/.local/bin/nakshatra-calc
+StandardOutput=journal
+StandardError=journal

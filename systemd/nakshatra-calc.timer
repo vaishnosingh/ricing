@@ -1,0 +1,12 @@
+[Unit]
+Description=Recompute nakshatra transitions daily at midnight
+
+[Timer]
+# Run at 00:01 each day (1 min after midnight so transition has settled)
+OnCalendar=*-*-* 00:01:00
+# Also run on boot/login (after 30s delay for network etc.)
+OnBootSec=30s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
