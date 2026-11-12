@@ -29,7 +29,7 @@ ShellRoot {
     Power { id: power }
     Prefs { id: prefs; onWallRequested: walls.open() }
     Glyph {}
-    Buds {}
+    Buds { id: buds }
     Cal { id: cal }
     Clip { id: clip }
     Charms { id: charms }

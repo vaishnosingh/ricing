@@ -24,8 +24,9 @@ Rectangle {
     // password sent -- focus back to the panel so Esc closes it
     onAskChanged: if (!ask && pw.activeFocus) root.forceActiveFocus()
 
+    readonly property bool btConnecting: (Bluetooth.devices?.values ?? []).some(d => d.state === BluetoothDeviceState.Connecting || d.pairing)
     Binding { when: root.isWifi && root.on; target: root.wifi; property: "scannerEnabled"; value: true }
-    Binding { when: root.kind === "bt" && root.on; target: root.bt; property: "discovering"; value: true }
+    Binding { when: root.kind === "bt" && root.on && !root.btConnecting; target: root.bt; property: "discovering"; value: true }
 
     // own network first, then saved, then by strength. While a password is being typed -- only that network: re-sorting would eat the input
     readonly property var nets: !isWifi || !wifi ? [] : wifi.networks.values.filter(n => n.name)
@@ -48,9 +49,20 @@ Rectangle {
         touched();
         err = "";
         if (!isWifi) {
-            if (o.pairing) return o.cancelPair();
-            if (!o.paired) { o.trusted = true; return o.pair(); }
-            return o.connected ? o.disconnect() : o.connect();
+            // Guard: don't double-trigger if already transitioning
+            if (o.pairing || o.state === BluetoothDeviceState.Connecting || o.state === BluetoothDeviceState.Disconnecting) return;
+            // Stop inquiry discovery so radio bandwidth is dedicated to stable connection setup
+            if (root.bt) root.bt.discovering = false;
+            if (!o.paired) {
+                o.trusted = true;
+                return o.pair();
+            }
+            if (o.connected) {
+                return o.disconnect();
+            } else {
+                o.trusted = true;
+                return o.connect();
+            }
         }
         if (o.connected) return portal ? Qt.openUrlExternally("http://neverssl.com") : o.disconnect();
         if (o.known || o.security === WifiSecurityType.Open || o.security === WifiSecurityType.Owe) return o.connect();
@@ -149,6 +161,17 @@ Rectangle {
                     function onConnectionFailed(r) {
                         if (r === ConnectionFailReason.NoSecrets) root.ask = row.o;
                         else root.err = ConnectionFailReason.toString(r);
+                    }
+                }
+                Connections {
+                    target: (!root.isWifi && row.o) ? row.o : null
+                    ignoreUnknownSignals: true
+                    function onPairedChanged() {
+                        if (row.o && row.o.paired && !row.o.connected && row.o.state !== BluetoothDeviceState.Connecting) {
+                            if (root.bt) root.bt.discovering = false;
+                            row.o.trusted = true;
+                            row.o.connect();
+                        }
                     }
                 }
             }

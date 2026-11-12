@@ -150,7 +150,7 @@ PanelWindow {
 
                     // Nothing / CMF earbuds (Sys.ear): name and charge, below them ANC -- cells like power modes
                     Column {
-                        visible: !!Sys.ear
+                        visible: !!Sys.ear && !Sys.ear.unsupported
                         width: parent.width
                         spacing: 10
                         Item {

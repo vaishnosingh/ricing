@@ -6,8 +6,8 @@ import qs
 import qs.components
 
 // Nothing / CMF earbuds connected (Sys.buds) -- a card at the bottom, like AirPods: slides in with a spring, the device glows as a
-// Glyph dot silhouette and fades into the photo, charge rings light up in a wave. Click -- dismiss, it leaves by itself after 6 s,
-// hover holds it. Photo -- buds/<device-name>.png (official render from nothing.tech), no file -- icon
+// Glyph dot silhouette and fades into the photo, charge rings light up in a wave.
+// Click anywhere on the screen, click the card, or press Esc to dismiss immediately. Auto-dismisses in 2.8s.
 PanelWindow {
     id: root
 
@@ -21,23 +21,45 @@ PanelWindow {
     property real res: 0
     property bool shown: false
 
+    // Debounce: do not re-show popup within 20s for the same device to prevent reconnect thrashing
+    property string lastAddress: ""
+    property real lastTime: 0
+
     // at shell startup the earbuds are already connected -- do not show
     property bool armed: false
     Timer { running: true; interval: 3000; onTriggered: root.armed = true }
     Connections {
         target: Sys
-        function onBudsChanged() { if (Sys.buds && root.armed) root.show(); }
+        function onBudsChanged() {
+            if (Sys.buds && root.armed) root.show();
+        }
     }
 
     function show() {
+        if (!Sys.buds) return;
+        const now = Date.now();
+        if (Sys.buds.address === lastAddress && (now - lastTime) < 20000) {
+            return; // Debounce reconnect loop
+        }
+        lastAddress = Sys.buds.address;
+        lastTime = now;
         name = Sys.buds.name;
         outA.stop();
         t = lit = pop = res = 0;
         shown = true;
         inA.restart();
     }
+
+    function showTest(testName) {
+        name = testName || "CMF Buds 2 Plus";
+        outA.stop();
+        t = lit = pop = res = 0;
+        shown = true;
+        inA.restart();
+    }
+
     function hide() {
-        if (!shown) return;
+        if (!shown && t === 0) return;
         shown = false;
         inA.stop();
         outA.restart();
@@ -45,21 +67,23 @@ PanelWindow {
 
     ParallelAnimation {
         id: inA
-        NumberAnimation { target: root; property: "t"; to: 1; duration: 600; easing.type: Easing.OutBack; easing.overshoot: 1 }
+        NumberAnimation { target: root; property: "t"; to: 1; duration: 400; easing.type: Easing.OutBack; easing.overshoot: 1 }
         SequentialAnimation {
-            PauseAnimation { duration: 150 }
+            PauseAnimation { duration: 100 }
             ParallelAnimation {
-                NumberAnimation { target: root; property: "lit"; to: 1; duration: 300 }
-                NumberAnimation { target: root; property: "pop"; to: 1; duration: 750; easing.type: Easing.OutBack }
+                NumberAnimation { target: root; property: "lit"; to: 1; duration: 250 }
+                NumberAnimation { target: root; property: "pop"; to: 1; duration: 500; easing.type: Easing.OutBack }
             }
         }
         SequentialAnimation {
-            PauseAnimation { duration: 800 }
-            NumberAnimation { target: root; property: "res"; to: 1; duration: 700; easing.type: Easing.InOutSine }
+            PauseAnimation { duration: 350 }
+            NumberAnimation { target: root; property: "res"; to: 1; duration: 450; easing.type: Easing.InOutSine }
         }
     }
-    NumberAnimation { id: outA; target: root; property: "t"; to: 0; duration: 380; easing.type: Easing.InCubic }
-    Timer { interval: 6000; running: root.shown && !hov.hovered; onTriggered: root.hide() }
+    NumberAnimation { id: outA; target: root; property: "t"; to: 0; duration: 260; easing.type: Easing.InCubic }
+
+    // Auto-dismisses in 2.8s so it never lingers or blocks the user
+    Timer { interval: 2800; running: root.shown; onTriggered: root.hide() }
 
     // slight sway while visible
     property real bob: 0
@@ -71,21 +95,30 @@ PanelWindow {
     }
 
     visible: t > 0
-    anchors.bottom: true
-    implicitWidth: Math.ceil(460 * Theme.s)
-    implicitHeight: Math.ceil(520 * Theme.s)
+    anchors { left: true; right: true; top: true; bottom: true }
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
-    mask: Region { item: card }
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "glyph-buds"
+
+    // Click anywhere on the screen outside or around the card to dismiss immediately
+    MouseArea {
+        anchors.fill: parent
+        onClicked: root.hide()
+    }
+
+    // Escape key dismisses immediately
+    Item {
+        focus: root.visible
+        Keys.onEscapePressed: root.hide()
+    }
 
     Stage {
         Rectangle {
             id: card
-            x: 20
-            // window with headroom at the top (40) for the spring overshoot; t = 0 -- card entirely below the screen edge
-            y: 40 + (1 - root.t) * 480
+            anchors.horizontalCenter: parent.horizontalCenter
+            // window position: rests 14px above screen bottom at t=1, slides off-screen at t=0
+            y: parent.height - 470 + (1 - root.t) * 500
             width: 420
             height: 456
             radius: 44
@@ -93,8 +126,28 @@ PanelWindow {
             border { width: 1; color: Theme.s2 }
             opacity: Math.min(1, root.t * 1.5)
 
-            HoverHandler { id: hov }
-            TapHandler { onTapped: root.hide() }
+            // Clicking on the card itself also dismisses
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.hide()
+            }
+
+            // Close button in top-right corner
+            Rectangle {
+                anchors { top: parent.top; topMargin: 18; right: parent.right; rightMargin: 18 }
+                width: 32
+                height: 32
+                radius: 16
+                color: closeHov.hovered ? Theme.s3 : "transparent"
+                Icon {
+                    anchors.centerIn: parent
+                    text: "\u{F0156}" // mdi-close
+                    font.pixelSize: 18
+                    color: Theme.mute
+                }
+                HoverHandler { id: closeHov; cursorShape: Qt.PointingHandCursor }
+            }
 
             Lb { anchors.horizontalCenter: parent.horizontalCenter; y: 28; text: "connected"; px: 11 }
             Text {
@@ -167,7 +220,6 @@ PanelWindow {
                         id: bat
                         required property string modelData
                         readonly property real v: Sys.ear?.[modelData] ?? 0
-                        // each ring has its own wave: from zero to the charge, the numbers follow
                         property real k: 0
                         NumberAnimation on k { from: 0; to: 1; duration: 900; easing.type: Easing.OutCubic }
                         spacing: 8

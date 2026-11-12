@@ -11,14 +11,18 @@ CTRL = uuid.UUID("aeac4a03-dff5-498f-843a-34487cf133eb").bytes
 # the channel is not constant across models -- ask SDP: the CTRL service in the RFCOMM protocol list (uuid16 0003) and the number
 def channel(mac):
     q = b"\x35\x11\x1c" + CTRL + b"\xff\xff\x35\x03\x09\x00\x04\x00"
-    with socket.socket(socket.AF_BLUETOOTH, socket.SOCK_SEQPACKET, socket.BTPROTO_L2CAP) as s:
-        s.settimeout(4)
-        s.connect((mac, 1))
-        s.send(struct.pack(">BHH", 6, 1, len(q)) + q)
-        m = re.search(rb"\x19\x00\x03\x08(.)", s.recv(1024), re.S)
-    if not m:
-        sys.exit("not a Nothing device")
-    return m[1][0]
+    try:
+        with socket.socket(socket.AF_BLUETOOTH, socket.SOCK_SEQPACKET, socket.BTPROTO_L2CAP) as s:
+            s.settimeout(1.5)
+            s.connect((mac, 1))
+            s.send(struct.pack(">BHH", 6, 1, len(q)) + q)
+            data = s.recv(1024)
+            m = re.search(rb"\x19\x00\x03\x08(.)", data, re.S)
+            if not m:
+                return None
+            return m[1][0]
+    except Exception:
+        return None
 
 
 def crc(b):  # CRC-16/MODBUS
@@ -39,8 +43,8 @@ def ask(s, reqs):
     got, buf = {}, b""
     while want - got.keys():
         d = s.recv(1024)
-        if not d:  # the earbuds left mid-exchange -- recv returns b"" without end, the loop would spin forever
-            sys.exit("closed")
+        if not d:
+            break
         buf += d
         while buf and buf[0] != 0x55:
             buf = buf[1:]
@@ -54,17 +58,42 @@ def ask(s, reqs):
     return got
 
 
-mac, *rest = sys.argv[1:]
-reqs = [(0xF00F, bytes([1, int(rest[1]), 0]))] if rest[:1] == ["mode"] else []
-with socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM) as s:
-    s.settimeout(4)
-    s.connect((mac, channel(mac)))
-    got = ask(s, reqs + [(0xC007, b""), (0xC01E, b"")])
+def main():
+    if len(sys.argv) < 2:
+        print("{}")
+        sys.exit(0)
 
-# charge: number of batteries, then pairs (2 left, 3 right, 4 case; level & 7f). Mode: 01 MM 00 ...
-bat, mode = got[0x4007], got[0x401E]
-out = {"mode": mode[1]}
-for i in range(bat[0]):
-    k, v = bat[1 + 2 * i], bat[2 + 2 * i]
-    out[{2: "l", 3: "r", 4: "case"}.get(k, str(k))] = v & 0x7F
-print(json.dumps(out))
+    mac, *rest = sys.argv[1:]
+    if not re.match(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$", mac):
+        print("{}")
+        sys.exit(0)
+
+    try:
+        ch = channel(mac)
+        if ch is None:
+            print("{}")
+            sys.exit(0)
+
+        reqs = [(0xF00F, bytes([1, int(rest[1]), 0]))] if rest[:1] == ["mode"] else []
+        with socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM) as s:
+            s.settimeout(1.5)
+            s.connect((mac, ch))
+            got = ask(s, reqs + [(0xC007, b""), (0xC01E, b"")])
+
+        bat, mode = got.get(0x4007), got.get(0x401E)
+        out = {}
+        if mode and len(mode) > 1:
+            out["mode"] = mode[1]
+        if bat and len(bat) > 0:
+            for i in range(bat[0]):
+                if 1 + 2 * i < len(bat) and 2 + 2 * i < len(bat):
+                    k, v = bat[1 + 2 * i], bat[2 + 2 * i]
+                    out[{2: "l", 3: "r", 4: "case"}.get(k, str(k))] = v & 0x7F
+        print(json.dumps(out))
+    except Exception:
+        print("{}")
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

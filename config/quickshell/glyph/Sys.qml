@@ -95,10 +95,27 @@ Singleton {
     // ponytail: we recognize by name, like Gadgetbridge; not Nothing -- ear will not reply, ear stays null ----
     readonly property var buds: Bluetooth.devices.values.find(d => d.connected && /^(nothing|cmf|ear)\b/i.test(d.name)) ?? null
     property var ear: null // {mode, l, r, case?}
-    onBudsChanged: ear = null
-    // right after connecting the channel is not ready yet -- ask every 2 s until they reply. ponytail: a non-Nothing with a similar
-    // name will keep being polled while connected
-    Timer { interval: 2000; repeat: true; running: !!root.buds && !root.ear; onTriggered: root.earRun([]) }
+    property int earAttempts: 0
+    onBudsChanged: {
+        ear = null;
+        earAttempts = 0;
+        if (buds) earInitTimer.restart();
+        else earInitTimer.stop();
+    }
+
+    // Give the audio link 4 seconds to settle before probing RFCOMM; at most 2 attempts so we never loop or drop the connection
+    Timer {
+        id: earInitTimer
+        interval: 4000
+        repeat: false
+        onTriggered: {
+            if (root.buds && !root.ear && root.earAttempts < 2) {
+                root.earAttempts++;
+                root.earRun([]);
+            }
+        }
+    }
+
     readonly property var ancModes: [[5, "off"], [7, "transp"], [3, "low"], [2, "mid"], [1, "high"], [4, "auto"]]
     property var earNext: null
     function earRun(a) {
@@ -110,8 +127,32 @@ Singleton {
     function setAnc(m) { ear = Object.assign({}, ear, { mode: m }); earRun(["mode", m]); }
     Process {
         id: earP
-        stdout: StdioCollector { onStreamFinished: { try { root.ear = JSON.parse(text); } catch (e) { root.ear = null; } } }
-        onExited: if (root.earNext) { command = root.earNext; root.earNext = null; running = true; }
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const parsed = JSON.parse(text);
+                    if (parsed && (parsed.l !== undefined || parsed.mode !== undefined)) {
+                        root.ear = parsed;
+                    } else if (root.earAttempts >= 2) {
+                        root.ear = { unsupported: true };
+                    }
+                } catch (e) {
+                    if (root.earAttempts >= 2) {
+                        root.ear = { unsupported: true };
+                    }
+                }
+            }
+        }
+        onExited: {
+            if (exitCode !== 0 && root.earAttempts >= 2) {
+                root.ear = { unsupported: true };
+            }
+            if (root.earNext) {
+                command = root.earNext;
+                root.earNext = null;
+                running = true;
+            }
+        }
     }
 
     // ---- caffeine: do not sleep. The inhibitor needs a live window -- an invisible 0x0 one, as in demonshot ----
