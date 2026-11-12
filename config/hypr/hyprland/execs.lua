@@ -10,7 +10,7 @@ hl.on("hyprland.start", function()
 
     -- Keyring and auth
     hl.exec_cmd("gnome-keyring-daemon --start --components=secrets")
-    hl.exec_cmd("/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1")
+    hl.exec_cmd("/usr/libexec/hyprpolkitagent")
 
     -- Clipboard history
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
@@ -31,9 +31,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("mpris-proxy")
 
     -- hypridle starts the shell (Rules.idle): timings from house rules -> ~/.config/demonshot/hypridle.conf
-
-    -- background kitty without a window: the first Super+Q opens instantly too
-    hl.exec_cmd(vars.terminal .. " --start-as=hidden")
 end)
 
 -- Resizer listener

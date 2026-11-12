@@ -68,7 +68,7 @@ Singleton {
             property bool natural: true
             property bool tap: true
             property bool typingOff: false
-            property int scroll: 30       // % — scroll_factor 0.3
+            property int scroll: 100      // % — scroll_factor 1.0
             property int sens: 0          // -100…100 → sensitivity -1…1
             property bool flat: false
             // Idle: minutes, 0 -- never
@@ -115,7 +115,10 @@ Singleton {
     function monitor() {
         if (!mon.name) { monWanted = true; return; }
         monWanted = false;
-        hypr(`hl.monitor({ output = "${mon.name}", mode = "${mon.w}x${mon.h}@${hz}", position = "auto", scale = ${store.monScale || '"auto"'} })`);
+        const targetScale = store.monScale || 1.0;
+        // Skip redundant hl.monitor calls if already running at target scale (prevents DRM modeset screen flashing)
+        if (Math.abs(targetScale - (mon.scale || 1.0)) < 0.001) return;
+        hypr(`hl.monitor({ output = "${mon.name}", mode = "${mon.w}x${mon.h}@${hz}", position = "auto", scale = ${targetScale} })`);
         monReread.restart();
     }
     readonly property var rates: mon.rates.length ? mon.rates : [60, 120]

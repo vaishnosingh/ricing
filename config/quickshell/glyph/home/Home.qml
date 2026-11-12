@@ -707,47 +707,13 @@ PanelWindow {
             opacity: 0.60
         }
 
-        // ── Center Moon Orb Interaction & Gravity Well ──────────────────────
+        // ── Center Moon Orb Telemetry Badge ─────────────────────────────────
         Item {
-            id: orbInteractionArea
-            x: 720
-            y: 300
-            width: 480
-            height: 480
-
-            readonly property real cx: width / 2
-            readonly property real cy: height / 2
-
-            HoverHandler {
-                id: orbHover
-                cursorShape: Qt.PointingHandCursor
-                onHoveredChanged: {
-                    Theme.orbHovered = hovered;
-                    if (!hovered) {
-                        Theme.orbTiltX = 0;
-                        Theme.orbTiltY = 0;
-                    }
-                }
-                onPointChanged: {
-                    if (hovered) {
-                        const dx = (point.position.x - orbInteractionArea.cx) / orbInteractionArea.cx;
-                        const dy = (point.position.y - orbInteractionArea.cy) / orbInteractionArea.cy;
-                        Theme.orbTiltX = Math.max(-14, Math.min(14, dx * 14));
-                        Theme.orbTiltY = Math.max(-14, Math.min(14, dy * 14));
-                    }
-                }
-            }
-        }
-
-        // ── Center Moon Orb Hover Telemetry Badge ───────────────────────────
-        Item {
-            x: 760
-            y: 785
-            width: 400
+            id: moonTelemetryBadge
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 865
+            width: telemetryRow.width + 28
             height: 32
-            opacity: Theme.orbHovered ? 1.0 : 0.0
-            visible: opacity > 0.01
-            Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutQuad } }
 
             Rectangle {
                 anchors.centerIn: parent
@@ -755,7 +721,12 @@ PanelWindow {
                 height: 28
                 radius: 14
                 color: Theme.s1
-                border { width: 1; color: Theme.s3 }
+                border { width: 1; color: pillHover.hovered ? Theme.red : Theme.s3 }
+                Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                HoverHandler {
+                    id: pillHover
+                }
 
                 Row {
                     id: telemetryRow

@@ -163,7 +163,10 @@ hl.bind(vars.kbPinWindow, hl.dsp.window.pin())
 hl.bind(vars.kbWindowFullscreen, hl.dsp.window.fullscreen({ mode = "fullscreen" }))
 hl.bind(vars.kbWindowBorderedFullscreen, hl.dsp.window.fullscreen({ mode = "maximized" }))
 hl.bind(vars.kbToggleWindowFloating, hl.dsp.window.float())
+hl.bind("SUPER + ALT + space", hl.dsp.window.float())
 hl.bind(vars.kbCloseWindow, hl.dsp.window.close())
+hl.bind("ALT + F4", hl.dsp.window.close())
+hl.bind("SUPER + SHIFT + Q", hl.dsp.window.kill())
 
 -- Special workspace toggles
 hl.bind(vars.kbSpecialWs, fn.toggle_special("special"))
@@ -175,6 +178,7 @@ hl.bind(vars.kbTodoWs, fn.toggle_special("todo"))
 -- Apps
 hl.bind(vars.kbTerminal, function() superTap = false; hl.dispatch(hl.dsp.exec_cmd(vars.terminal)) end)
 hl.bind("SUPER + KP_Enter", function() superTap = false; hl.dispatch(hl.dsp.exec_cmd(vars.terminal)) end)
+hl.bind("SUPER + T", function() superTap = false; hl.dispatch(hl.dsp.exec_cmd(vars.terminal)) end)
 hl.bind(vars.kbBrowser, function() superTap = false; hl.dispatch(hl.dsp.exec_cmd(vars.browser)) end)
 hl.bind(vars.kbEditor, function() if vars.apps.editor then hl.exec_cmd(vars.apps.editor) end end)
 hl.bind(vars.kbFileExplorer, hl.dsp.exec_cmd(vars.fileExplorer))

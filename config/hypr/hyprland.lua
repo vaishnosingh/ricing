@@ -1,5 +1,5 @@
 -- Monitor: hypr decides the scale (the shell then applies it too, Rules.monitor)
-hl.monitor({ output = "", mode = "highres", position = "auto", scale = "auto" })
+hl.monitor({ output = "", mode = "highres", position = "auto", scale = 1.0})
 
 -- XWayland is scaled by hypr: blurry on HiDPI, but the size is correct at any scale. Crisp at integer scale -- in user.lua:
 --   hl.config({ xwayland = { force_zero_scaling = true } }); hl.env("GDK_SCALE", "2")

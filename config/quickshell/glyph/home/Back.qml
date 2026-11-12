@@ -228,7 +228,7 @@ PanelWindow {
 
         Wall { id: wall; anchors.fill: parent; path: Theme.wallSrc(Theme.state.wall); animate: !Sys.wallOpen }
 
-        // Moon phase orb — centred with spring-damped cursor gravity
+        // Moon phase orb — centred static
         Orb {
             id: orb
             visible: Theme.state.orb && !wall.opaque
@@ -236,12 +236,6 @@ PanelWindow {
             width: 480
             height: 480
             step: 8
-            transform: Translate {
-                x: Theme.orbTiltX
-                y: Theme.orbTiltY
-                Behavior on x { SpringAnimation { spring: 2.8; damping: 0.28 } }
-                Behavior on y { SpringAnimation { spring: 2.8; damping: 0.28 } }
-            }
         }
 
         // Ultra-smooth shooting stars and comets travelling across the sky

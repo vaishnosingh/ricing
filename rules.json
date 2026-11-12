@@ -11,7 +11,7 @@
     "hibernate": true,
     "kbSwitch": 0,
     "lockAfter": 10,
-    "monScale": 0,
+    "monScale": 1.0,
     "motion": true,
     "natural": true,
     "night": false,

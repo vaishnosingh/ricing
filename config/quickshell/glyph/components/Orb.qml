@@ -66,10 +66,10 @@ Item {
             litPath = `M ${cx - R} ${cy} A ${R} ${R} 0 1 0 ${cx + R} ${cy} A ${R} ${R} 0 1 0 ${cx - R} ${cy} Z`
         } else if (phi <= 0.5) {
             const sw = phi < 0.25 ? 0 : 1   // crescent bows right (0), gibbous bows left (1)
-            litPath = `M ${top} A ${R} ${rx} 0 0 1 ${bot} A ${rx} ${R} 0 0 ${sw} ${top} Z`
+            litPath = `M ${top} A ${R} ${R} 0 0 1 ${bot} A ${rx} ${R} 0 0 ${sw} ${top} Z`
         } else {
             const sw = phi < 0.75 ? 0 : 1   // gibbous bows right (0), crescent bows left (1)
-            litPath = `M ${top} A ${R} ${rx} 0 0 0 ${bot} A ${rx} ${R} 0 0 ${sw} ${top} Z`
+            litPath = `M ${top} A ${R} ${R} 0 0 0 ${bot} A ${rx} ${R} 0 0 ${sw} ${top} Z`
         }
 
         // Gradient focal point: sunlight comes from the lit side
@@ -131,7 +131,7 @@ Item {
 </g>
 
 <!-- LAYER 2 · Bright lit zone — the sunlit phase burns bright -->
-${litPath ? `<path d="${litPath}" fill="url(#lit)"/>` : ''}
+${litPath ? `<path d="${litPath}" fill="url(#lit)" clip-path="url(#disk)"/>` : ''}
 
 <!-- Nothing Signature Red Accent Dot at lunar cusp -->
 ${redAccentSvg}

@@ -20,9 +20,10 @@ return {
     lockCmd                    = rice .. " lock", -- locks the current shell; a second one does not start
 
     -- Apps
-    terminal                   = "kitty -1", -- single-instance: new windows from the live process, ~40 ms instead of ~400
-    browser                    = "chromium",
+    terminal                   = "kitty",
+    browser                    = "brave-browser",
     fileExplorer               = "thunar",
+    fileManager                = "thunar",
     audioSettings              = "pavucontrol",
     -- special-workspace apps (launched if the workspace is empty) and the editor. Keybinds read them on press,
     -- so put yours in user.lua: require("variables").apps.editor = "codium". Not installed -- an empty
@@ -35,9 +36,9 @@ return {
 
     -- Touchpad
     touchpadDisableTyping      = false,
-    touchpadScrollFactor       = 0.3,
-    gestureFingers             = 3,
-    workspaceSwipeFingers      = 4,
+    touchpadScrollFactor       = 1.0,
+    gestureFingers             = 4,
+    workspaceSwipeFingers      = 3,
     gestureFingersMore         = 5,
 
     -- Blur
@@ -75,7 +76,7 @@ return {
     volumeStep                 = 5,
     volumeMax                  = 100,
     cursorTheme                = "Bibata-Modern-Ice",
-    cursorSize                 = 23,
+    cursorSize                 = 24,
     sleepGestureCmd            = "systemctl suspend-then-hibernate || systemctl suspend", -- no hibernation -- regular sleep
 
     ------------------
@@ -83,7 +84,7 @@ return {
     ------------------
 
     -- Workspaces
-    kbMoveWinToWs              = "SUPER + ALT",
+    kbMoveWinToWs              = "SUPER + SHIFT",
     kbMoveWinToWsGroup         = "CTRL + SUPER + ALT",
     kbGoToWs                   = "SUPER",
     kbGoToWsGroup              = "CTRL + SUPER",
@@ -100,10 +101,10 @@ return {
     kbMoveWindow               = "SUPER + Z",
     kbResizeWindow             = "SUPER + X",
     kbWindowPip                = "SUPER + ALT + backslash",
-    kbPinWindow                = "SUPER + SHIFT + P", -- Super+P -- vpn panel
+    kbPinWindow                = "SUPER + SHIFT + F",
     kbWindowFullscreen         = "SUPER + F",
     kbWindowBorderedFullscreen = "SUPER + ALT + F",
-    kbToggleWindowFloating     = "SUPER + ALT + space",
+    kbToggleWindowFloating     = "SUPER + W",
     kbCloseWindow              = "SUPER + Q",
 
     -- Special workspaces toggles
@@ -116,7 +117,7 @@ return {
     -- Apps
     kbTerminal                 = "SUPER + Return",
     kbBrowser                  = "SUPER + B",
-    kbEditor                   = "SUPER + SHIFT + K",
+    kbEditor                   = "SUPER + C",
     kbFileExplorer             = "SUPER + E",
 
     -- Misc
