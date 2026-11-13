@@ -1,37 +1,38 @@
 import QtQuick
 import qs
 
-// Zero-allocation MagicUI Morphing Digit Component for High-Density LED Clock.
-// Operates directly within parent dot-matrix FBO without nested layer effects
-// or MultiEffect allocations, guaranteeing ZERO extra VRAM and minimal RAM usage.
-// The dot-matrix halftone shader naturally produces fluid liquid morphing physics
-// as overlapping glyph quad transforms crossfade and scale.
+// Liquid MagicUI Morphing Digit Component for High-Density LED Clock.
+// Uses single-pass GPU Poisson kernel with MagicUI thresholding (metaball fusion)
+// packed into red/green channels for zero nested FBO overhead and true molten character transitions.
 Item {
     id: digitRoot
 
     property string text: "0"
     property real fontSize: 160
-    property real cellWidth: 84
+    property real cellWidth: 92
     property real cellHeight: 160
     property color color: Theme.fg
-    property int animDuration: 350
+    property int animDuration: 480
 
     width: cellWidth
     height: cellHeight
 
     property string currentVal: text
-    property string prevVal: ""
+    property string prevVal: text
+    property real progress: 1.0
     property bool animating: false
     property bool isReady: false
 
     onTextChanged: {
         if (!isReady) {
             currentVal = text;
+            prevVal = text;
             return;
         }
         if (text !== currentVal) {
             prevVal = currentVal;
             currentVal = text;
+            progress = 0.0;
             animating = true;
             morphAnim.restart();
         }
@@ -39,113 +40,72 @@ Item {
 
     Component.onCompleted: {
         currentVal = text;
+        prevVal = text;
         isReady = true;
     }
 
-    // ── Outgoing Digit (Contracts and dissolves into dots) ───────────────────
+    // ── Resting Static Display (Zero Overhead when Idle) ───────────────────
+    Text {
+        anchors.centerIn: parent
+        visible: !digitRoot.animating
+        text: digitRoot.currentVal
+        font.family: Theme.ui
+        font.pixelSize: digitRoot.fontSize
+        font.weight: Font.Bold
+        font.features: ({ "tnum": 1 })
+        color: digitRoot.color
+    }
+
+    // ── Single-Pass Liquid Morph Surface (Active ONLY while animating) ───────
     Item {
-        id: prevContainer
+        id: morphSurface
         anchors.fill: parent
         visible: digitRoot.animating
-        opacity: 0.0
-        scale: 1.0
-        transformOrigin: Item.Center
-        transform: Translate { id: prevTrans; y: 0 }
 
+        // Outgoing Digit in Red channel
         Text {
             anchors.centerIn: parent
             text: digitRoot.prevVal
             font.family: Theme.ui
             font.pixelSize: digitRoot.fontSize
             font.weight: Font.Bold
-            color: digitRoot.color
+            font.features: ({ "tnum": 1 })
+            color: "#ff0000"
         }
-    }
 
-    // ── Incoming Digit (Expands and crystallizes from dots) ─────────────────
-    Item {
-        id: currContainer
-        anchors.fill: parent
-        opacity: 1.0
-        scale: 1.0
-        transformOrigin: Item.Center
-        transform: Translate { id: currTrans; y: 0 }
-
+        // Incoming Digit in Green channel
         Text {
             anchors.centerIn: parent
             text: digitRoot.currentVal
             font.family: Theme.ui
             font.pixelSize: digitRoot.fontSize
             font.weight: Font.Bold
-            color: digitRoot.color
+            font.features: ({ "tnum": 1 })
+            color: "#00ff00"
+        }
+
+        // Enable layer ONLY while animating to maintain strict zero-allocation idle efficiency
+        layer.enabled: digitRoot.animating
+        layer.effect: ShaderEffect {
+            property real progress: digitRoot.progress
+            readonly property size size: Qt.size(morphSurface.width, morphSurface.height)
+            fragmentShader: Qt.resolvedUrl("shaders/morph.frag.qsb")
         }
     }
 
-    // ── Fluid Morphing Animation (Pure SceneGraph Transforms) ───────────────
-    ParallelAnimation {
+    // ── Fluid Morph Animation Curve (Silky S-Curve Deceleration) ─────────────
+    NumberAnimation {
         id: morphAnim
-        running: false
-
-        // Outgoing dissolution
-        NumberAnimation {
-            target: prevContainer
-            property: "opacity"
-            from: 1.0
-            to: 0.0
-            duration: digitRoot.animDuration
-            easing.type: Easing.InOutQuad
-        }
-        NumberAnimation {
-            target: prevContainer
-            property: "scale"
-            from: 1.0
-            to: 0.88
-            duration: digitRoot.animDuration
-            easing.type: Easing.InOutQuad
-        }
-        NumberAnimation {
-            target: prevTrans
-            property: "y"
-            from: 0
-            to: 5
-            duration: digitRoot.animDuration
-            easing.type: Easing.InOutQuad
-        }
-
-        // Incoming crystallization
-        NumberAnimation {
-            target: currContainer
-            property: "opacity"
-            from: 0.0
-            to: 1.0
-            duration: digitRoot.animDuration
-            easing.type: Easing.InOutQuad
-        }
-        NumberAnimation {
-            target: currContainer
-            property: "scale"
-            from: 1.10
-            to: 1.0
-            duration: digitRoot.animDuration
-            easing.type: Easing.OutQuad
-        }
-        NumberAnimation {
-            target: currTrans
-            property: "y"
-            from: -5
-            to: 0
-            duration: digitRoot.animDuration
-            easing.type: Easing.OutQuad
-        }
+        target: digitRoot
+        property: "progress"
+        from: 0.0
+        to: 1.0
+        duration: digitRoot.animDuration
+        easing.type: Easing.InOutCubic
 
         onFinished: {
             digitRoot.animating = false;
-            prevContainer.opacity = 0.0;
-            prevContainer.scale = 1.0;
-            prevTrans.y = 0;
-            currContainer.opacity = 1.0;
-            currContainer.scale = 1.0;
-            currTrans.y = 0;
+            digitRoot.progress = 1.0;
         }
     }
 }

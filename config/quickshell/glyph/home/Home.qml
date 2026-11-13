@@ -407,7 +407,7 @@ PanelWindow {
                         MorphingDigit {
                             text: clockArea.hhStr[index]
                             fontSize: 160
-                            cellWidth: 84
+                            cellWidth: 92
                             cellHeight: 160
                         }
                     }
@@ -429,13 +429,13 @@ PanelWindow {
                     MorphingDigit {
                         text: clockArea.mmStr[0]
                         fontSize: 160
-                        cellWidth: 84
+                        cellWidth: 92
                         cellHeight: 160
                     }
                     MorphingDigit {
                         text: clockArea.mmStr[1]
                         fontSize: 160
-                        cellWidth: 84
+                        cellWidth: 92
                         cellHeight: 160
                     }
                 }
@@ -456,13 +456,13 @@ PanelWindow {
                     MorphingDigit {
                         text: clockArea.ssStr[0]
                         fontSize: 160
-                        cellWidth: 84
+                        cellWidth: 92
                         cellHeight: 160
                     }
                     MorphingDigit {
                         text: clockArea.ssStr[1]
                         fontSize: 160
-                        cellWidth: 84
+                        cellWidth: 92
                         cellHeight: 160
                     }
                 }
