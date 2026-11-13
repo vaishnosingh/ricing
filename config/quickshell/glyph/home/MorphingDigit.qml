@@ -2,8 +2,8 @@ import QtQuick
 import qs
 
 // Liquid MagicUI Morphing Digit Component for High-Density LED Clock.
-// Uses single-pass GPU Poisson kernel with MagicUI thresholding (metaball fusion)
-// packed into red/green channels for zero nested FBO overhead and true molten character transitions.
+// Uses side-by-side atlas FBO with calibrated metaball fusion isosurface
+// ensuring 100% stroke visibility, fluid liquid bridges, zero double-exposure, and zero blinking.
 Item {
     id: digitRoot
 
@@ -12,7 +12,7 @@ Item {
     property real cellWidth: 92
     property real cellHeight: 160
     property color color: Theme.fg
-    property int animDuration: 480
+    property int animDuration: 520
 
     width: cellWidth
     height: cellHeight
@@ -56,44 +56,71 @@ Item {
         color: digitRoot.color
     }
 
-    // ── Single-Pass Liquid Morph Surface (Active ONLY while animating) ───────
+    // ── Offscreen Dual-Character Atlas (Left: prevVal, Right: currentVal) ───
     Item {
-        id: morphSurface
-        anchors.fill: parent
-        visible: digitRoot.animating
+        id: atlasItem
+        width: digitRoot.cellWidth * 2
+        height: digitRoot.cellHeight
+        visible: false
 
-        // Outgoing Digit in Red channel
-        Text {
-            anchors.centerIn: parent
-            text: digitRoot.prevVal
-            font.family: Theme.ui
-            font.pixelSize: digitRoot.fontSize
-            font.weight: Font.Bold
-            font.features: ({ "tnum": 1 })
-            color: "#ff0000"
+        // Left half: Outgoing Digit
+        Item {
+            x: 0
+            y: 0
+            width: digitRoot.cellWidth
+            height: digitRoot.cellHeight
+            Text {
+                anchors.centerIn: parent
+                text: digitRoot.prevVal
+                font.family: Theme.ui
+                font.pixelSize: digitRoot.fontSize
+                font.weight: Font.Bold
+                font.features: ({ "tnum": 1 })
+                color: "#ffffff"
+            }
         }
 
-        // Incoming Digit in Green channel
-        Text {
-            anchors.centerIn: parent
-            text: digitRoot.currentVal
-            font.family: Theme.ui
-            font.pixelSize: digitRoot.fontSize
-            font.weight: Font.Bold
-            font.features: ({ "tnum": 1 })
-            color: "#00ff00"
-        }
-
-        // Enable layer ONLY while animating to maintain strict zero-allocation idle efficiency
-        layer.enabled: digitRoot.animating
-        layer.effect: ShaderEffect {
-            property real progress: digitRoot.progress
-            readonly property size size: Qt.size(morphSurface.width, morphSurface.height)
-            fragmentShader: Qt.resolvedUrl("shaders/morph.frag.qsb")
+        // Right half: Incoming Digit
+        Item {
+            x: digitRoot.cellWidth
+            y: 0
+            width: digitRoot.cellWidth
+            height: digitRoot.cellHeight
+            Text {
+                anchors.centerIn: parent
+                text: digitRoot.currentVal
+                font.family: Theme.ui
+                font.pixelSize: digitRoot.fontSize
+                font.weight: Font.Bold
+                font.features: ({ "tnum": 1 })
+                color: "#ffffff"
+            }
         }
     }
 
-    // ── Fluid Morph Animation Curve (Silky S-Curve Deceleration) ─────────────
+    // ── GPU Texture Buffer (Rasterized ONLY while animating) ─────────────────
+    ShaderEffectSource {
+        id: atlasSource
+        sourceItem: atlasItem
+        live: digitRoot.animating
+        hideSource: true
+        recursive: false
+    }
+
+    // ── Liquid Metaball Morph Surface (Active ONLY while animating) ──────────
+    ShaderEffect {
+        id: morphEffect
+        anchors.fill: parent
+        visible: digitRoot.animating
+
+        property var source: atlasSource
+        property real progress: digitRoot.progress
+        readonly property size size: Qt.size(digitRoot.cellWidth, digitRoot.cellHeight)
+
+        fragmentShader: Qt.resolvedUrl("shaders/morph.frag.qsb")
+    }
+
+    // ── Silky S-Curve Morph Animation ───────────────────────────────────────
     NumberAnimation {
         id: morphAnim
         target: digitRoot
