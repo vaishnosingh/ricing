@@ -381,7 +381,7 @@ PanelWindow {
         id: stage
 
         // ── LEFT COLUMN ─────────────────────────────────────────────────────
-        // High-res dot-matrix clock with seconds counter and authentic MagicUI morphing transitions
+        // High-res dot-matrix clock with crisp seconds counter (authentic Nothing OS LED aesthetic)
         Item {
             id: clockArea
             x: 80
@@ -450,7 +450,7 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
-                // Seconds (2 digits with MagicUI morphing transition)
+                // Seconds (2 digits with instant crisp Nothing OS LED dot update)
                 Row {
                     spacing: 0
                     MorphingDigit {
