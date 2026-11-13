@@ -68,7 +68,7 @@ PanelWindow {
 
     function fire() {
         if (!cur) return;
-        Quickshell.execDetached(["sh", "-c", 'cliphist decode "$1" | wl-copy', "sh", cur.id]);
+        Quickshell.execDetached(["sh", "-c", 'printf "%s\\t\\n" "$1" | cliphist decode | wl-copy', "sh", cur.id]);
         close();
     }
     // ponytail: pinning only protects from deletion; cliphist's max-items will still evict old entries
@@ -115,7 +115,7 @@ PanelWindow {
         onTriggered: {
             if (!root.cur || root.cur.text.startsWith("[[ binary data")) return;
             root.decId = root.cur.id;
-            dec.exec(["sh", "-c", 'cliphist decode "$1" | head -c 4000', "sh", root.cur.id]);
+            dec.exec(["sh", "-c", 'printf "%s\\t\\n" "$1" | cliphist decode | head -c 4000', "sh", root.cur.id]);
         }
     }
     FileView {
@@ -313,7 +313,7 @@ PanelWindow {
         // Through a temp file, so the preview does not catch a half-written one
         Process {
             running: row.type === "image" && !root.cached[row.modelData.id]
-            command: ["sh", "-c", 'f="$1$2"; [ -s "$f" ] || { cliphist decode "$2" > "$f.$$" && mv "$f.$$" "$f"; }', "sh", root.cache, row.modelData.id]
+            command: ["sh", "-c", 'f="$1$2"; [ -s "$f" ] || { printf "%s\\t\\n" "$2" | cliphist decode > "$f.$$" && mv "$f.$$" "$f"; }', "sh", root.cache, row.modelData.id]
             onExited: code => { if (!code) root.cached = Object.assign({}, root.cached, { [row.modelData.id]: true }); }
         }
         Column {

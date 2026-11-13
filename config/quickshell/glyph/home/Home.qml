@@ -381,7 +381,7 @@ PanelWindow {
         id: stage
 
         // ── LEFT COLUMN ─────────────────────────────────────────────────────
-        // High-res dot-matrix clock with seconds counter and MagicUI morphing transitions
+        // High-res dot-matrix clock with seconds counter and authentic MagicUI morphing transitions
         Item {
             id: clockArea
             x: 80
