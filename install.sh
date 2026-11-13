@@ -137,7 +137,7 @@ ARCH_PKGS=(
     brightnessctl playerctl wl-clipboard cliphist grim slurp swappy imagemagick libvips qalculate libqalculate
     gpu-screen-recorder ydotool libnotify trash-cli
     kitty fish starship fastfetch btop cava eza zoxide direnv
-    thunar pavucontrol
+    nautilus thunar pavucontrol
     ttf-jetbrains-mono-nerd noto-fonts noto-fonts-cjk noto-fonts-emoji papirus-icon-theme adw-gtk-theme
 )
 ARCH_AUR=(
@@ -151,7 +151,7 @@ FEDORA_PKGS=(
     pipewire pipewire-pulseaudio wireplumber NetworkManager bluez power-profiles-daemon
     brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick qalculate
     kitty fish starship fastfetch btop cava eza zoxide
-    thunar pavucontrol libnotify
+    nautilus thunar pavucontrol libnotify adw-gtk3-theme
     google-noto-sans-fonts google-noto-color-emoji-fonts papirus-icon-theme adw-gtk3-theme
 )
 
@@ -160,9 +160,9 @@ DEBIAN_PKGS=(
     hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
     sddm gnome-keyring geoclue-2.0 upower xdg-user-dirs
     pipewire pipewire-pulse wireplumber network-manager bluez
-    brightnessctl playerctl wl-clipboard grim slurp swappy imagemagick
+    brightnessctl playerctl wl-clipboard grim slurp swappy imagemagick qalculate
     kitty fish
-    thunar pavucontrol libnotify-bin
+    nautilus thunar pavucontrol libnotify-bin
     fonts-noto-core fonts-noto-color-emoji papirus-icon-theme
 )
 
@@ -173,7 +173,7 @@ ZYPPER_PKGS=(
     pipewire pipewire-pulseaudio wireplumber NetworkManager bluez
     brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick qalculate
     kitty fish starship fastfetch btop
-    thunar pavucontrol libnotify-tools
+    nautilus thunar pavucontrol libnotify-tools
     noto-sans-fonts noto-coloremoji-fonts papirus-icon-theme
 )
 
@@ -184,7 +184,7 @@ VOID_PKGS=(
     pipewire wireplumber
     brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick qalculate
     kitty fish starship fastfetch btop
-    thunar pavucontrol libnotify
+    nautilus thunar pavucontrol libnotify
     noto-fonts-ttf papirus-icon-theme
 )
 
@@ -212,6 +212,8 @@ STANDALONE_LINKS=(
     "$G/term/cava                               .config/cava"
     "$G/term/gtk-3.0/gtk.css                    .config/gtk-3.0/gtk.css"
     "$G/term/gtk-4.0/gtk.css                    .config/gtk-4.0/gtk.css"
+    "$G/term/gtk-3.0/settings.ini               .config/gtk-3.0/settings.ini"
+    "$G/term/gtk-4.0/settings.ini               .config/gtk-4.0/settings.ini"
     "config/fish/config.fish                    .config/fish/config.fish"
     "config/fish/functions/fish_greeting.fish   .config/fish/functions/fish_greeting.fish"
     "config/fonts                               .local/share/fonts/glyph"
@@ -227,6 +229,10 @@ OVERLAY_LINKS=(
     "config/quickshell/rice/rice                .local/bin/rice"
     "config/fonts                               .local/share/fonts/glyph"
     "config/wireplumber                         .config/wireplumber"
+    "$G/term/gtk-3.0/gtk.css                    .config/gtk-3.0/gtk.css"
+    "$G/term/gtk-4.0/gtk.css                    .config/gtk-4.0/gtk.css"
+    "$G/term/gtk-3.0/settings.ini               .config/gtk-3.0/settings.ini"
+    "$G/term/gtk-4.0/settings.ini               .config/gtk-4.0/settings.ini"
     "nakshatra-calc                             .local/bin/nakshatra-calc"
     "systemd/nakshatra-calc.service             .config/systemd/user/nakshatra-calc.service"
     "systemd/nakshatra-calc.timer               .config/systemd/user/nakshatra-calc.timer"
@@ -497,13 +503,13 @@ detect_installed_apps() {
     done
 
     local fms=()
-    for f in thunar nautilus dolphin yazi nemo ranger; do
+    for f in nautilus thunar dolphin yazi nemo ranger; do
         command -v "$f" >/dev/null 2>&1 && fms+=("$f")
     done
 
     local primary_term="${terms[0]:-kitty}"
     local primary_browser="${browsers[0]:-brave-browser}"
-    local primary_fm="${fms[0]:-thunar}"
+    local primary_fm="${fms[0]:-nautilus}"
 
     echo "$primary_term|$primary_browser|$primary_fm"
 }
@@ -799,7 +805,7 @@ gesture = 3, pinchin, exec, kitty
 gesture = 3, pinchout, exec, brave-browser
 gesture = 4, up, special, special
 gesture = 4, down, close
-gesture = 4, pinchin, exec, thunar
+gesture = 4, pinchin, exec, nautilus
 gesture = 4, pinchout, global, shell:settings
 gesture = 5, down, exec, systemctl suspend
 EOF
@@ -1398,6 +1404,11 @@ run_interactive_wizard() {
     if [ "$enable_gtk_dark" = "true" ] && command -v gsettings >/dev/null 2>&1; then
         gsettings set org.gnome.desktop.interface color-scheme prefer-dark 2>/dev/null || true
         gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3-dark 2>/dev/null || true
+    fi
+
+    # Set default file manager
+    if command -v xdg-mime >/dev/null 2>&1; then
+        xdg-mime default org.gnome.Nautilus.desktop inode/directory 2>/dev/null || true
     fi
 
     # Nakshatra service

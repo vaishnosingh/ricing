@@ -52,26 +52,43 @@ switch:checked slider { background-color: #000000; }
 scrollbar slider { border-radius: 999px; background-color: #4A4A4A; }
 scrollbar slider:hover, scrollbar slider:active { background-color: #8C8C8C; }
 
-/* ---- thunar: files -- an s1 card on black, shortcuts on the left, path and status bar -- Space Mono ---- */
-.thunar paned > separator { min-width: 12px; background: none; box-shadow: none; }
+/* ---- nautilus (GNOME Files) / GTK4 Libadwaita Nothing OS polish ---- */
+window.nautilus-window {
+    background-color: #000000;
+}
 
-.thunar .standard-view { background-color: #0E0E0E; border-radius: 28px; padding: 10px; margin: 0 12px 0 0; }
-.thunar .standard-view .view:not(.rubberband), .thunar .standard-view .view *:not(.rubberband) { background-color: transparent; }
-.thunar .standard-view .view:selected, .thunar .standard-view .view *:selected { background-color: #F2F2F2; color: #000000; border-radius: 14px; }
-/* in the table (detailed view) each column has its own background -- rounding would cut the row into pills */
-.thunar .standard-view treeview.view:selected, .thunar .standard-view treeview.view *:selected { border-radius: 0; }
-.thunar .rubberband { background-color: alpha(#F2F2F2, 0.08); border: 1px solid alpha(#F2F2F2, 0.4); }
+.navigation-sidebar {
+    background-color: #000000;
+    font-family: "Space Grotesk";
+}
 
-.thunar .sidebar, .thunar .sidebar .view { background: none; }
-.thunar .sidebar .view { padding: 8px 12px; border-radius: 999px; }
-.thunar .sidebar .view:hover { background-color: #1A1A1A; }
-.thunar .sidebar .view:selected { background-color: #F2F2F2; color: #000000; }
+.navigation-sidebar > separator {
+    background-color: #1A1A1A;
+}
 
-.thunar .path-bar-button { font-family: "Space Mono"; font-size: 12px; letter-spacing: 1px; padding: 6px 14px; }
-.thunar .path-bar-button:checked { background-color: #F2F2F2; color: #000000; box-shadow: none; }
+.navigation-sidebar row {
+    border-radius: 999px;
+    margin: 2px 8px;
+    padding: 6px 12px;
+}
 
-.thunar notebook header { background: none; box-shadow: none; border: none; }
-.thunar notebook header tab { border-radius: 999px; padding: 4px 16px; box-shadow: none; }
-.thunar notebook header tab:checked { background-color: #F2F2F2; color: #000000; }
+.navigation-sidebar row:selected {
+    background-color: #F2F2F2;
+    color: #000000;
+}
 
-.thunar statusbar { font-family: "Space Mono"; font-size: 11px; letter-spacing: 1.5px; color: #8C8C8C; padding: 6px 12px; }
+.navigation-sidebar row:hover:not(:selected) {
+    background-color: #1A1A1A;
+}
+
+/* path-bar buttons: Nothing pill styling */
+.path-bar button {
+    border-radius: 999px;
+    font-family: "Space Mono";
+    font-size: 12px;
+}
+
+.path-bar button:checked {
+    background-color: #F2F2F2;
+    color: #000000;
+}

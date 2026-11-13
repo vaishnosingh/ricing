@@ -22,8 +22,8 @@ return {
     -- Apps
     terminal                   = "kitty",
     browser                    = "brave-browser",
-    fileExplorer               = "thunar",
-    fileManager                = "thunar",
+    fileExplorer               = "nautilus",
+    fileManager                = "nautilus",
     audioSettings              = "pavucontrol",
     -- special-workspace apps (launched if the workspace is empty) and the editor. Keybinds read them on press,
     -- so put yours in user.lua: require("variables").apps.editor = "codium". Not installed -- an empty

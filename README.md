@@ -175,7 +175,7 @@ Are you sure you want to continue this ricing? [Y/n]:
 7. **Step 4: Display Resolution & Scaling Safeguard:** Choose native 1.0x (100% native resolution for 1080p/1200p to prevent oversized apps), 1.25x (1440p), 1.5x, 2.0x (4K), auto, or custom scale.
 8. **Step 5: Visual Styling & Theme:** Choose Color Palette (0–6), Window Rounding (0px sharp flat, 8px subtle, 14px soft), Window Gaps, Animated Stars, Grid, and Blur/Shadows.
 9. **Step 6: Input Devices & Gestures:** Calibrate swipe distance (**250px natural travel**, 200px fast flip, 350px, custom), natural scrolling, tap-to-click, cursor theme, and cursor size.
-10. **Step 7: Default Application Stack:** Scans your system and configures preferred Terminal (`kitty`), Browser (`brave-browser`), File Manager (`thunar`), and Shell (`fish`).
+10. **Step 7: Default Application Stack:** Scans your system and configures preferred Terminal (`kitty`), Browser (`brave-browser`), File Manager (`nautilus`), and Shell (`fish`).
 11. **Step 8: Typography & Terminal Font:** Select Font Family (`JetBrains Mono Nerd Font`), and Font Size (`12.5pt` optimal legibility, `11.0pt`, `14.0pt`).
 12. **Step 9: Astronomical Engine:** Sets up an isolated Python environment for Swiss Ephemeris (`pyswisseph`) bypassing PEP 668 restrictions. Choose lowered telemetry badge placement or compact centered badge.
 13. **Step 10: User Identity & Clock:** Personalize greeting display name for Altar/Lockscreen and select 12-Hour AM/PM or 24-Hour military clock.
@@ -219,7 +219,7 @@ This safely removes the ricing symlinks/overlays, restores your original files f
 | <kbd>Super</kbd> + <kbd>I</kbd> | Preferences & Appearance Customization Menu |
 | <kbd>Super</kbd> + <kbd>Return</kbd> | Open Terminal (`kitty`) |
 | <kbd>Super</kbd> + <kbd>B</kbd> | Open Web Browser (`brave-browser`) |
-| <kbd>Super</kbd> + <kbd>E</kbd> | Open File Manager (`thunar`) |
+| <kbd>Super</kbd> + <kbd>E</kbd> | Open File Manager (`nautilus`) |
 | <kbd>Super</kbd> + <kbd>Q</kbd> | Close Focused Window |
 | <kbd>Super</kbd> + <kbd>V</kbd> | Clipboard History Manager (`cliphist`) |
 | <kbd>Super</kbd> + <kbd>.</kbd> | Emoji & Unicode Symbols Palette |
@@ -247,7 +247,7 @@ This safely removes the ricing symlinks/overlays, restores your original files f
 | **3-Finger Pinch Out** | Open Web Browser (`brave-browser`) |
 | **4-Finger Swipe ↑ (Up)** | Toggle Special Workspace |
 | **4-Finger Swipe ↓ (Down)** | Close Focused Window |
-| **4-Finger Pinch In** | Open File Manager (`thunar`) |
+| **4-Finger Pinch In** | Open File Manager (`nautilus`) |
 | **4-Finger Pinch Out** | Open Preferences (`settings`) |
 | **5-Finger Swipe ↓ (Down)** | Suspend System |
 
@@ -273,7 +273,7 @@ sudo pacman -Syu --needed \
     pipewire pipewire-pulse wireplumber networkmanager bluez bluez-utils power-profiles-daemon \
     brightnessctl playerctl wl-clipboard cliphist grim slurp swappy imagemagick \
     kitty fish starship fastfetch btop cava eza zoxide \
-    thunar pavucontrol ttf-jetbrains-mono-nerd noto-fonts papirus-icon-theme
+    nautilus thunar pavucontrol ttf-jetbrains-mono-nerd noto-fonts papirus-icon-theme
 
 # AUR Packages
 yay -S --needed qtengine darkly-bin bibata-cursor-theme-bin zen-browser-bin
@@ -291,7 +291,7 @@ sudo dnf install -y \
     pipewire pipewire-pulseaudio wireplumber NetworkManager bluez power-profiles-daemon \
     brightnessctl playerctl wl-clipboard grim slurp swappy ImageMagick \
     kitty fish starship fastfetch btop cava eza zoxide \
-    thunar pavucontrol libnotify google-noto-sans-fonts papirus-icon-theme
+    nautilus thunar pavucontrol libnotify google-noto-sans-fonts papirus-icon-theme adw-gtk3-theme
 
 # QuickShell Copr
 sudo dnf copr enable -y solopasha/hyprland
@@ -309,7 +309,7 @@ sudo apt-get update && sudo apt-get install -y \
     sddm gnome-keyring geoclue-2.0 upower xdg-user-dirs \
     pipewire pipewire-pulse wireplumber network-manager bluez \
     brightnessctl playerctl wl-clipboard grim slurp swappy imagemagick \
-    kitty fish thunar pavucontrol libnotify-bin fonts-noto-core papirus-icon-theme
+    kitty fish nautilus thunar pavucontrol libnotify-bin fonts-noto-core papirus-icon-theme
 ```
 </details>
 
